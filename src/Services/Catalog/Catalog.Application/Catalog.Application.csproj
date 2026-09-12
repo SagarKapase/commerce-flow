@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <!-- Application orchestrates the domain, so it references it. -->
+    <ProjectReference Include="..\Catalog.Domain\Catalog.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      Why does Application reference EF Core?
+
+      Because ICatalogDbContext (Abstractions/ICatalogDbContext.cs) exposes
+      DbSet<T> and lets services compose IQueryable filters. That is a
+      deliberate trade-off: we accept a dependency on EF Core's *abstractions*
+      in exchange for not writing a repository layer that would hide LINQ
+      composition and projections.
+
+      Note what we did NOT reference: Catalog.Infrastructure. Application never
+      knows which database it is talking to.
+    -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.11" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.11" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Deliberately empty.
+
+    TargetFramework, Nullable and ImplicitUsings come from the repository-root
+    Directory.Build.props.
+
+    There are NO package references and NO project references here, and that is
+    the single most important fact about this project: the domain model has no
+    dependency on EF Core, ASP.NET Core, SQLite, HTTP or JSON. Business rules
+    stay readable without any infrastructure noise, and they cannot be
+    accidentally written against a database API.
+  -->
+
+</Project>

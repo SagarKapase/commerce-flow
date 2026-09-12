@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Identity.Application\Identity.Application.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The EF Core stores that back UserManager, plus SQLite. -->
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.11" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.11" />
+
+    <!--
+      JWT creation. This is why IAccessTokenGenerator is an interface owned by
+      the Application layer: AuthService asks for "a token for this user" and
+      has no idea it will be a JWT signed with HMAC-SHA256. Swapping to
+      asymmetric RSA keys, or to a completely different token format, changes
+      only this project.
+    -->
+    <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" Version="8.22.0" />
+  </ItemGroup>
+
+</Project>

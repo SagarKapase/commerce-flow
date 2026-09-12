@@ -1,0 +1,27 @@
+# ---- Build output ----
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+artifacts/
+
+# ---- Visual Studio / Rider / VS Code ----
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+
+# ---- SQLite databases ----
+# Every service creates its own .db file at runtime. Databases are generated
+# from EF Core migrations, so they are build output, not source. The -wal and
+# -shm files are SQLite's write-ahead log and shared-memory files.
+*.db
+*.db-shm
+*.db-wal
+
+# ---- Secrets ----
+# appsettings.Development.json is committed in this learning repo because it
+# holds no real secrets. Anything that ever holds one goes in user-secrets.
+appsettings.*.Local.json
+*.pfx

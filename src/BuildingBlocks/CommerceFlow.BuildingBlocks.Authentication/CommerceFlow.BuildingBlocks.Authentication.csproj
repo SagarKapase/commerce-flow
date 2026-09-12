@@ -1,0 +1,51 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    ===================================================================
+    THE FIRST BUILDING BLOCK, AND THE RULE THAT LET IT EXIST
+    ===================================================================
+
+    Since Phase 0 the rule has been: a project moves to BuildingBlocks only
+    when two or more services ALREADY have the same code, and only when that
+    code is purely technical. Phase 4 named the trigger out loud - "when
+    Ordering arrives there will be four copies, and four is when we extract".
+
+    There are now four: Catalog, Basket, Inventory and Ordering each validate
+    the same tokens with the same forty lines. Extracting on the second copy
+    would have been a guess about what would turn out to be common. Extracting
+    on the fourth is a measurement.
+
+    WHAT IS IN HERE: the MECHANISM. How to read a bearer token, verify its
+    signature, and check issuer, audience and lifetime. Nothing about
+    CommerceFlow's business.
+
+    WHAT IS DELIBERATELY NOT IN HERE:
+
+      - Role name constants. "Admin" still lives in CatalogRoles,
+        InventoryRoles and OrderingRoles, duplicated three times on purpose.
+        The MECHANISM (how a token is validated) is shared; the POLICY (which
+        roles this service cares about) is not. Basket cares about no roles at
+        all - a shared Roles class would force it to depend on a concept it
+        does not use, and every new role in the system would mean redeploying
+        every service.
+
+      - Any DTO, entity or contract that crosses a service boundary. The moment
+        Catalog and Basket share a compiled ProductResponse, they can no longer
+        be deployed independently, and the whole architecture reduces to a
+        distributed monolith.
+
+    The test to apply before adding anything here: "if this changes, must every
+    service be rebuilt and redeployed together?" If the answer is yes AND that
+    is acceptable - because it is infrastructure that genuinely moves in
+    lockstep - it belongs. If the answer is yes and that is NOT acceptable, it
+    does not.
+  -->
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.12" />
+
+    <!-- ValidateDataAnnotations() lives here rather than in the framework. -->
+    <PackageReference Include="Microsoft.Extensions.Options.DataAnnotations" Version="10.0.12" />
+  </ItemGroup>
+
+</Project>

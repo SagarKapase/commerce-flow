@@ -1,0 +1,50 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!--
+    ===================================================================
+    THE ONLY PROJECT IN THIS SOLUTION WITH NO CONTROLLERS.
+    ===================================================================
+
+    It was created with `dotnet new web`, the EMPTY ASP.NET Core template,
+    rather than the controller-based webapi template every service used. There
+    is no Controllers folder, no DTO, no DbContext, no domain, and no test
+    project, because there is nothing here to test: the gateway's entire
+    behaviour is configuration.
+
+    (Incidentally, the reason this sentence avoids writing that template's
+    flag out in full is that an XML comment may not contain two consecutive
+    hyphens. It is a genuinely surprising build error the first time you hit
+    it, so: now you have hit it.)
+
+    That is the rule for a gateway, and it is the one people break first:
+
+      IT ROUTES. IT DOES NOT DECIDE.
+
+    The moment a gateway starts stitching two services' responses together,
+    enriching a payload, or checking a business rule, it becomes a service that
+    every team has to deploy through - a distributed monolith with a single
+    point of contention. Every "just this once" is how that happens.
+
+    What legitimately belongs here is CROSS-CUTTING EDGE CONCERNS, the things
+    that are true of every request regardless of which service serves it:
+    routing, rate limiting, TLS termination, coarse authentication, request
+    logging and correlation ids. Not business.
+  -->
+
+  <ItemGroup>
+    <!-- YARP: Microsoft's reverse proxy, configured from appsettings.json. -->
+    <PackageReference Include="Yarp.ReverseProxy" Version="2.3.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      The gateway validates tokens too - the same way every service does, with
+      the same shared library. That is not redundancy, it is defence in depth:
+      the edge rejects obviously-unauthenticated traffic cheaply, and each
+      service still checks for itself because a gateway is not a security
+      boundary you want to be the ONLY one.
+    -->
+    <ProjectReference Include="..\..\BuildingBlocks\CommerceFlow.BuildingBlocks.Authentication\CommerceFlow.BuildingBlocks.Authentication.csproj" />
+  </ItemGroup>
+
+</Project>

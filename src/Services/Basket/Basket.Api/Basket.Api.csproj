@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!--
+    ONE PROJECT, NOT FOUR - and this is a deliberate architectural decision,
+    not laziness.
+
+    Catalog got Domain / Application / Infrastructure / Api because it has real
+    rules worth isolating and it was the cheapest place to learn the layout.
+    A basket is a per-user document with almost no invariants: quantity must be
+    at least one, and you cannot hoard a thousand distinct line items. Splitting
+    that across four assemblies would produce four files of pass-through code
+    and three project references to justify them.
+
+    Clean Architecture is a RESPONSE TO COMPLEXITY, not a default. The layers
+    still exist here - they are folders (Domain, Persistence, Baskets,
+    Controllers) rather than assemblies. The boundary is visible; it just is not
+    enforced by the compiler. That is the trade-off, and at this size it is the
+    right one.
+
+    If Basket grows real rules - pricing, promotions, reservations - we split
+    it, and by then you will have FELT the reason rather than assumed it.
+  -->
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.12" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.12" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="10.2.3" />
+
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.12">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\BuildingBlocks\CommerceFlow.BuildingBlocks.Authentication\CommerceFlow.BuildingBlocks.Authentication.csproj" />
+  </ItemGroup>
+
+  <!--
+    Note what is NOT here: a reference to Catalog. Basket stores a ProductId and
+    a copy of the name and price, and has no idea what a Catalog.Domain.Product
+    is. In Phase 5 it will ASK Catalog over HTTP - still without referencing it.
+  -->
+
+</Project>

@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <!--
+      NOTE: there is no Identity.Domain project, and no ProjectReference here.
+
+      Catalog had a Domain project because we owned the Product model outright.
+      Here, ASP.NET Core Identity owns the user model: IdentityUser supplies the
+      id, email, normalised email, password hash, security stamp, lockout
+      counters and concurrency stamp, and UserManager enforces the rules over
+      them. Writing a second, hand-rolled User aggregate on top of that would be
+      duplicated indirection that protects nothing.
+
+      So ApplicationUser lives HERE, in the Application layer, and it derives
+      from a framework type. That is the honest description of the design.
+    -->
+    <PackageReference Include="Microsoft.Extensions.Identity.Stores" Version="10.0.11" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.11" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.11" />
+  </ItemGroup>
+
+</Project>

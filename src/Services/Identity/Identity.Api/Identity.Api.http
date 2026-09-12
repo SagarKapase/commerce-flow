@@ -1,0 +1,106 @@
+@Identity_HostAddress = https://localhost:7102
+
+### 1. Register -> expect 201 Created + Location header
+POST {{Identity_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "uday@commerceflow.local",
+  "password": "Str0ngPass",
+  "fullName": "Uday L"
+}
+
+### 2. Same email again -> expect 409 Conflict
+POST {{Identity_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "uday@commerceflow.local",
+  "password": "Str0ngPass",
+  "fullName": "Duplicate"
+}
+
+### 3. Weak password -> expect 400 with an "errors" array from Identity's validators
+POST {{Identity_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "weak@commerceflow.local",
+  "password": "alllowercase",
+  "fullName": "Weak Password"
+}
+
+### 4. Login -> expect 200 with accessToken + refreshToken
+POST {{Identity_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "uday@commerceflow.local",
+  "password": "Str0ngPass"
+}
+
+### 5. Wrong password -> expect 401. Compare with #6: the responses are identical.
+POST {{Identity_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "uday@commerceflow.local",
+  "password": "WrongPass1"
+}
+
+### 6. Unknown email -> expect the SAME 401, so nobody can enumerate accounts
+POST {{Identity_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "nobody@commerceflow.local",
+  "password": "WrongPass1"
+}
+
+@accessToken = PASTE-ACCESS-TOKEN-HERE
+@refreshToken = PASTE-REFRESH-TOKEN-HERE
+@userId = PASTE-USER-ID-HERE
+
+### 7. Who am I -> expect 200
+GET {{Identity_HostAddress}}/api/users/me
+Authorization: Bearer {{accessToken}}
+
+### 8. No token -> expect 401
+GET {{Identity_HostAddress}}/api/users/me
+
+### 9. Admin-only endpoint as a Customer -> expect 403 (not 401!)
+GET {{Identity_HostAddress}}/api/users/{{userId}}
+Authorization: Bearer {{accessToken}}
+
+### 10. Refresh -> expect 200 with a DIFFERENT refresh token
+POST {{Identity_HostAddress}}/api/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+### 11. Send the OLD refresh token again -> expect 401, and every session is revoked
+POST {{Identity_HostAddress}}/api/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+### 12. Log in as the seeded administrator
+POST {{Identity_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@commerceflow.local",
+  "password": "Admin#12345"
+}
+
+### 13. Logout -> expect 204 (and 204 again for an unknown token)
+POST {{Identity_HostAddress}}/api/auth/logout
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}

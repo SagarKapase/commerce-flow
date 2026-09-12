@@ -1,0 +1,167 @@
+@Ordering_HostAddress = https://localhost:7105
+@Identity_HostAddress = https://localhost:7102
+@Catalog_HostAddress = https://localhost:7101
+@Basket_HostAddress = https://localhost:7103
+@Inventory_HostAddress = https://localhost:7104
+
+################################################################
+# PHASE 8 NEEDS FIVE SERVICES RUNNING:
+#   Catalog, Identity, Basket, Inventory, Ordering
+#
+#   POST /api/orders
+#        |-- GET  https://localhost:7103/api/basket        (the items)
+#        |-- POST https://localhost:7104/.../reservations  (hold the stock)
+#        `-- DELETE https://localhost:7103/api/basket      (best effort)
+################################################################
+
+### 0a. Alice
+POST {{Identity_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "alice@commerceflow.local", "password": "Str0ngPass" }
+
+### 0b. Admin (needed to put stock in Inventory)
+POST {{Identity_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "admin@commerceflow.local", "password": "Admin#12345" }
+
+@aliceToken = PASTE-ALICE-ACCESS-TOKEN-HERE
+@adminToken = PASTE-ADMIN-ACCESS-TOKEN-HERE
+
+### 0c. Find a real, active product
+GET {{Catalog_HostAddress}}/api/products?isActive=true
+
+@productId = PASTE-A-REAL-PRODUCT-ID-HERE
+
+################################################################
+# Setup
+################################################################
+
+### 1. Put 10 units in stock
+POST {{Inventory_HostAddress}}/api/inventory/adjustments
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "productId": "{{productId}}", "quantityChange": 10, "reason": "Phase 8 test stock" }
+
+### 2. Alice adds 3 to her basket. Price comes from Catalog (Phase 5).
+POST {{Basket_HostAddress}}/api/basket/items
+Content-Type: application/json
+Authorization: Bearer {{aliceToken}}
+
+{ "productId": "{{productId}}", "quantity": 3 }
+
+### 3. Confirm the basket
+GET {{Basket_HostAddress}}/api/basket
+Authorization: Bearer {{aliceToken}}
+
+################################################################
+# The happy path - note the body has NO items
+################################################################
+
+### 4. Place the order -> 201, status "InventoryReserved",
+###    inventoryReservationId populated. Ordering read the items from
+###    Basket using ALICE'S OWN forwarded token.
+POST {{Ordering_HostAddress}}/api/orders
+Content-Type: application/json
+Authorization: Bearer {{aliceToken}}
+
+{
+  "shippingAddress": {
+    "line1": "1 High Street",
+    "city": "Bengaluru",
+    "postalCode": "560001",
+    "country": "India"
+  }
+}
+
+### 5. Stock moved: 7 available, 3 reserved, total still 10
+GET {{Inventory_HostAddress}}/api/inventory/{{productId}}
+Authorization: Bearer {{aliceToken}}
+
+### 6. Basket is empty - cleared by step 4
+GET {{Basket_HostAddress}}/api/basket
+Authorization: Bearer {{aliceToken}}
+
+################################################################
+# The refusals
+################################################################
+
+### 7. Order again with an empty basket -> 400
+POST {{Ordering_HostAddress}}/api/orders
+Content-Type: application/json
+Authorization: Bearer {{aliceToken}}
+
+{ "shippingAddress": { "line1": "1 High Street", "city": "Bengaluru", "postalCode": "560001", "country": "India" } }
+
+### 8. Ask for more than exists
+POST {{Basket_HostAddress}}/api/basket/items
+Content-Type: application/json
+Authorization: Bearer {{aliceToken}}
+
+{ "productId": "{{productId}}", "quantity": 50 }
+
+### 9. Place it -> 201 Created, but status "Rejected" with a reason
+###    straight from Inventory.
+###
+###    201 FOR A FAILED ORDER? Yes. The POST created a resource - an order
+###    record saying the attempt happened and why it did not work. The HTTP
+###    status describes the REQUEST; the body describes the BUSINESS OUTCOME.
+###    A client must read `status`, not just the status code.
+POST {{Ordering_HostAddress}}/api/orders
+Content-Type: application/json
+Authorization: Bearer {{aliceToken}}
+
+{ "shippingAddress": { "line1": "1 High Street", "city": "Bengaluru", "postalCode": "560001", "country": "India" } }
+
+### 10. Stock untouched, and the basket was NOT cleared - the customer
+###     can lower the quantity and try again.
+GET {{Inventory_HostAddress}}/api/inventory/{{productId}}
+Authorization: Bearer {{aliceToken}}
+
+################################################################
+# THE POINT OF THE PHASE - do these two in order
+################################################################
+
+### 11. Fix the basket to something orderable
+PUT {{Basket_HostAddress}}/api/basket/items/{{productId}}
+Content-Type: application/json
+Authorization: Bearer {{aliceToken}}
+
+{ "quantity": 2 }
+
+### 12. NOW STOP THE INVENTORY SERVICE, then send this.
+###     -> 503 + Retry-After: 5
+POST {{Ordering_HostAddress}}/api/orders
+Content-Type: application/json
+Authorization: Bearer {{aliceToken}}
+
+{ "shippingAddress": { "line1": "1 High Street", "city": "Bengaluru", "postalCode": "560001", "country": "India" } }
+
+### 13. Look at the order history. There is a GHOST ORDER, stuck in
+###     "Pending" with no reservation, that nothing will ever move.
+###
+###     That is not a bug in the code - it is the honest cost of
+###     orchestrating three databases with no transaction between them.
+###     Phase 11 (saga) makes the flow resumable; Phase 12 (outbox)
+###     guarantees the next step is never lost; Phase 13 (idempotency)
+###     makes retrying the reservation safe.
+GET {{Ordering_HostAddress}}/api/orders/my-orders
+Authorization: Bearer {{aliceToken}}
+
+### 14. NOW STOP THE BASKET SERVICE TOO and send this.
+###     -> 503 again, but NO new order appears in step 13's list.
+###     Basket fails at step 1, before anything is written, which is
+###     exactly why the fragile call goes first.
+POST {{Ordering_HostAddress}}/api/orders
+Content-Type: application/json
+Authorization: Bearer {{aliceToken}}
+
+{ "shippingAddress": { "line1": "1 High Street", "city": "Bengaluru", "postalCode": "560001", "country": "India" } }
+
+### 15. A ghost order can at least still be cancelled by hand - it is
+###     Pending, which is a cancellable state. That is the only recovery
+###     this phase offers, and it needs a human.
+POST {{Ordering_HostAddress}}/api/orders/PASTE-THE-PENDING-ORDER-ID/cancel
+Authorization: Bearer {{aliceToken}}

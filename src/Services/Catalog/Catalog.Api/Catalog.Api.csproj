@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <!--
+      The API references BOTH Application (to call it) and Infrastructure
+      (to register EF Core implementations in DI).
+
+      An interviewer may say this breaks the dependency rule. It does not:
+      Program.cs is the *composition root*, and the composition root is the one
+      place allowed to know every concrete type. What matters is that no
+      controller and no application service ever uses an Infrastructure type.
+    -->
+    <ProjectReference Include="..\Catalog.Application\Catalog.Application.csproj" />
+    <ProjectReference Include="..\Catalog.Infrastructure\Catalog.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\CommerceFlow.BuildingBlocks.Authentication\CommerceFlow.BuildingBlocks.Authentication.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      Phase 3. Note what this package is for: VALIDATING tokens, not issuing
+      them. Catalog has no user table, no password hashing and no way to create
+      a token - it only checks signatures. Identity references the same package
+      for the same reason, which is why Catalog does not reference Identity.
+    -->
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.12" />
+
+    <!-- Swagger UI: the only user interface this project will ever have. -->
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="10.2.3" />
+
+    <!--
+      Design-time only. `dotnet ef` needs it in the STARTUP project to build the
+      DbContext and read configuration. PrivateAssets="all" keeps it out of the
+      published output - it is a tool, not a runtime dependency.
+    -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.11">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+
+</Project>

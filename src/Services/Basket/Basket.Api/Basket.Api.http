@@ -1,0 +1,163 @@
+@Basket_HostAddress = https://localhost:7103
+@Identity_HostAddress = https://localhost:7102
+@Catalog_HostAddress = https://localhost:7101
+
+################################################################
+# Setup - Catalog must be RUNNING for anything below to work
+################################################################
+
+### 0a. Log in as Alice - copy accessToken into @aliceToken
+POST {{Identity_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "alice@commerceflow.local",
+  "password": "Str0ngPass"
+}
+
+### 0b. Log in as the admin - needed to create a product to discontinue
+POST {{Identity_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@commerceflow.local",
+  "password": "Admin#12345"
+}
+
+@aliceToken = PASTE-ALICE-ACCESS-TOKEN-HERE
+@adminToken = PASTE-ADMIN-ACCESS-TOKEN-HERE
+
+### 0c. Find a real product and note its price
+GET {{Catalog_HostAddress}}/api/products
+
+@productId = PASTE-A-REAL-PRODUCT-ID-HERE
+
+################################################################
+# The price hole is closed
+################################################################
+
+### 1. Add a product. There is no price in this body - there is nowhere
+###    to put one. Compare the unitPrice you get back with Catalog's.
+POST {{Basket_HostAddress}}/api/basket/items
+Content-Type: application/json
+Authorization: Bearer {{aliceToken}}
+
+{
+  "productId": "{{productId}}",
+  "quantity": 2
+}
+
+### 2. Try to smuggle a price in anyway. System.Text.Json ignores members
+###    the DTO does not declare, so both extra fields vanish and the real
+###    Catalog price comes back.
+POST {{Basket_HostAddress}}/api/basket/items
+Content-Type: application/json
+Authorization: Bearer {{aliceToken}}
+
+{
+  "productId": "{{productId}}",
+  "quantity": 1,
+  "unitPrice": 0.01,
+  "productName": "A Free Laptop"
+}
+
+### 3. A product that does not exist -> 400 (this used to succeed)
+POST {{Basket_HostAddress}}/api/basket/items
+Content-Type: application/json
+Authorization: Bearer {{aliceToken}}
+
+{
+  "productId": "00000000-0000-0000-0000-000000000001",
+  "quantity": 1
+}
+
+################################################################
+# A discontinued product cannot be bought
+################################################################
+
+### 4a. Create a product as admin, copy its id into @deadProductId
+POST {{Catalog_HostAddress}}/api/products
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "name": "Discontinued Mouse",
+  "description": "About to be pulled from sale",
+  "sku": "DEAD-002",
+  "price": 499.00,
+  "categoryId": "PASTE-A-CATEGORY-ID-HERE"
+}
+
+@deadProductId = PASTE-THE-NEW-PRODUCT-ID-HERE
+
+### 4b. Add it to the basket while it is still active -> 200
+POST {{Basket_HostAddress}}/api/basket/items
+Content-Type: application/json
+Authorization: Bearer {{aliceToken}}
+
+{
+  "productId": "{{deadProductId}}",
+  "quantity": 1
+}
+
+### 4c. Soft-delete it in Catalog -> 204
+DELETE {{Catalog_HostAddress}}/api/products/{{deadProductId}}
+Authorization: Bearer {{adminToken}}
+
+### 4d. Try to add it again -> 400 "it is no longer for sale".
+###     Catalog still ANSWERS (soft delete), it just answers isActive:false.
+POST {{Basket_HostAddress}}/api/basket/items
+Content-Type: application/json
+Authorization: Bearer {{aliceToken}}
+
+{
+  "productId": "{{deadProductId}}",
+  "quantity": 1
+}
+
+### 4e. But the line already in the basket is untouched. A basket holds a
+###     SNAPSHOT; it is not re-validated on read. Phase 8 re-checks at
+###     order time, which is the moment that actually matters.
+GET {{Basket_HostAddress}}/api/basket
+Authorization: Bearer {{aliceToken}}
+
+################################################################
+# NOW STOP THE CATALOG SERVICE AND RUN THESE TWO
+################################################################
+
+### 5. Reading your basket with Catalog DOWN -> 200. Degraded, not broken.
+###    This endpoint has no external dependency at all, on purpose.
+GET {{Basket_HostAddress}}/api/basket
+Authorization: Bearer {{aliceToken}}
+
+### 6. Adding with Catalog DOWN -> 503 + a Retry-After: 5 header.
+###    Not 500: Basket has no bug. Not 400: the request was fine.
+POST {{Basket_HostAddress}}/api/basket/items
+Content-Type: application/json
+Authorization: Bearer {{aliceToken}}
+
+{
+  "productId": "{{productId}}",
+  "quantity": 1
+}
+
+################################################################
+# Everything from Phase 4 still holds
+################################################################
+
+### 7. Set an exact quantity - no Catalog call needed, the line already exists
+PUT {{Basket_HostAddress}}/api/basket/items/{{productId}}
+Content-Type: application/json
+Authorization: Bearer {{aliceToken}}
+
+{
+  "quantity": 3
+}
+
+### 8. Remove a line
+DELETE {{Basket_HostAddress}}/api/basket/items/{{productId}}
+Authorization: Bearer {{aliceToken}}
+
+### 9. Clear the basket
+DELETE {{Basket_HostAddress}}/api/basket
+Authorization: Bearer {{aliceToken}}

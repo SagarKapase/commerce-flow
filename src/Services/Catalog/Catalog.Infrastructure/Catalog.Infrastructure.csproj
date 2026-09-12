@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <!--
+      Infrastructure implements the interfaces Application defines and maps the
+      entities Domain owns. The arrow points inwards: Infrastructure -> Application -> Domain.
+      Nothing points back out.
+    -->
+    <ProjectReference Include="..\Catalog.Application\Catalog.Application.csproj" />
+    <ProjectReference Include="..\Catalog.Domain\Catalog.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The one project that knows we are on SQLite. Swapping to PostgreSQL
+         means changing this package and one line in Program.cs. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.11" />
+  </ItemGroup>
+
+</Project>

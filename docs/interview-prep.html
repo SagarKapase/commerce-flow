@@ -1,0 +1,1577 @@
+<title>CommerceFlow Interview Drill</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+
+<style>
+/* ============================================================
+   TOKENS - complete light palette on bare :root.
+   ============================================================ */
+:root {
+  /* Neutrals carry a slate/steel bias toward the petrol accent,
+     so nothing reads as default grey. */
+  --ground:      #EAEEF3;
+  --surface:     #FFFFFF;
+  --surface-2:   #F3F6F9;
+  --ink:         #111820;
+  --ink-soft:    #4C5A69;
+  --ink-faint:   #7A8797;
+  --rule:        #D2DAE3;
+  --rule-strong: #B3BFCC;
+
+  --accent:      #0B6E75;
+  --accent-ink:  #FFFFFF;
+  --accent-wash: rgba(11, 110, 117, 0.09);
+  --accent-edge: rgba(11, 110, 117, 0.30);
+
+  /* Semantic - HTTP status families. Kept apart from the accent. */
+  --ok:    #1C6E45;
+  --ok-bg: rgba(28, 110, 69, 0.10);
+  --warn:    #97570A;
+  --warn-bg: rgba(151, 87, 10, 0.11);
+  --crit:    #A82820;
+  --crit-bg: rgba(168, 40, 32, 0.10);
+  --info:    #2A5A94;
+  --info-bg: rgba(42, 90, 148, 0.10);
+
+  --shadow: 0 1px 2px rgba(17, 24, 32, 0.05), 0 8px 24px -14px rgba(17, 24, 32, 0.30);
+
+  --sans:  "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --serif: "Source Serif 4", ui-serif, Georgia, "Times New Roman", serif;
+  --mono:  "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ground:      #0D1219;
+    --surface:     #151C24;
+    --surface-2:   #1B242E;
+    --ink:         #E3EAF2;
+    --ink-soft:    #9AA9B9;
+    --ink-faint:   #6D7C8C;
+    --rule:        #26313D;
+    --rule-strong: #3A4956;
+
+    --accent:      #45B8BF;
+    --accent-ink:  #04231F;
+    --accent-wash: rgba(69, 184, 191, 0.12);
+    --accent-edge: rgba(69, 184, 191, 0.34);
+
+    --ok:    #57BC85;
+    --ok-bg: rgba(87, 188, 133, 0.14);
+    --warn:    #D79A4A;
+    --warn-bg: rgba(215, 154, 74, 0.14);
+    --crit:    #E0736A;
+    --crit-bg: rgba(224, 115, 106, 0.14);
+    --info:    #74A6E0;
+    --info-bg: rgba(116, 166, 224, 0.14);
+
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.40), 0 10px 28px -16px rgba(0, 0, 0, 0.80);
+  }
+}
+
+:root[data-theme="dark"] {
+  --ground:      #0D1219;
+  --surface:     #151C24;
+  --surface-2:   #1B242E;
+  --ink:         #E3EAF2;
+  --ink-soft:    #9AA9B9;
+  --ink-faint:   #6D7C8C;
+  --rule:        #26313D;
+  --rule-strong: #3A4956;
+
+  --accent:      #45B8BF;
+  --accent-ink:  #04231F;
+  --accent-wash: rgba(69, 184, 191, 0.12);
+  --accent-edge: rgba(69, 184, 191, 0.34);
+
+  --ok:    #57BC85;
+  --ok-bg: rgba(87, 188, 133, 0.14);
+  --warn:    #D79A4A;
+  --warn-bg: rgba(215, 154, 74, 0.14);
+  --crit:    #E0736A;
+  --crit-bg: rgba(224, 115, 106, 0.14);
+  --info:    #74A6E0;
+  --info-bg: rgba(116, 166, 224, 0.14);
+
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.40), 0 10px 28px -16px rgba(0, 0, 0, 0.80);
+}
+
+/* ============================================================
+   BASE
+   ============================================================ */
+* { box-sizing: border-box; }
+
+body {
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 0 24px 96px;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+code, .mono { font-family: var(--mono); }
+
+code {
+  font-size: 0.87em;
+  background: var(--surface-2);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: 0.08em 0.34em;
+  white-space: nowrap;
+}
+
+/* ============================================================
+   MASTHEAD
+   ============================================================ */
+.masthead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 44px 0 26px;
+  border-bottom: 2px solid var(--ink);
+}
+
+.masthead h1 {
+  font-size: 34px;
+  line-height: 1.1;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 0 0 8px;
+  text-wrap: balance;
+}
+
+.masthead p {
+  margin: 0;
+  color: var(--ink-soft);
+  max-width: 56ch;
+  font-size: 15px;
+}
+
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0 0 10px;
+}
+
+.score {
+  font-family: var(--mono);
+  text-align: right;
+  white-space: nowrap;
+}
+.score b {
+  display: block;
+  font-size: 30px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.score span {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+/* ============================================================
+   CONTROL BAR
+   ============================================================ */
+.controls {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 0;
+  margin-bottom: 8px;
+  background: var(--ground);
+  border-bottom: 1px solid var(--rule);
+}
+
+.search {
+  flex: 1 1 200px;
+  min-width: 160px;
+  font: 400 14px/1.4 var(--sans);
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--rule-strong);
+  border-radius: 6px;
+  padding: 8px 11px;
+}
+.search::placeholder { color: var(--ink-faint); }
+
+.chip {
+  font: 500 13px/1 var(--sans);
+  color: var(--ink-soft);
+  background: var(--surface);
+  border: 1px solid var(--rule-strong);
+  border-radius: 999px;
+  padding: 8px 13px;
+  cursor: pointer;
+}
+.chip:hover { border-color: var(--accent-edge); color: var(--ink); }
+.chip[aria-pressed="true"] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+
+.ghost {
+  font: 500 13px/1 var(--sans);
+  color: var(--ink-soft);
+  background: none;
+  border: 0;
+  padding: 8px 6px;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--rule-strong);
+}
+.ghost:hover { color: var(--accent); }
+
+/* ============================================================
+   PHASE SECTIONS
+   ============================================================ */
+.phase { padding-top: 34px; }
+
+.phase-head {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  margin-bottom: 4px;
+}
+.phase-head h2 {
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+.phase-head .count {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+}
+.phase-sub {
+  margin: 0 0 22px;
+  color: var(--ink-soft);
+  max-width: 68ch;
+}
+
+/* --- The pitch: not a Q&A row, so it gets a surface --- */
+.pitch {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--accent);
+  border-radius: 4px;
+  padding: 20px 22px;
+  margin-bottom: 30px;
+  box-shadow: var(--shadow);
+}
+.pitch h3 {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0 0 10px;
+}
+.pitch blockquote {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 18px;
+  line-height: 1.6;
+  max-width: 64ch;
+}
+.pitch .flow {
+  margin: 18px 0 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--rule);
+}
+
+/* --- Request flow strip --- */
+.flow-title {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin: 0 0 8px;
+}
+pre.flow-code {
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.75;
+  color: var(--ink-soft);
+  margin: 0;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+/* ============================================================
+   QUESTION LIST - rules, not cards
+   ============================================================ */
+.qlist { border-top: 1px solid var(--rule-strong); }
+
+.qa { border-bottom: 1px solid var(--rule); }
+
+.qa-head {
+  display: grid;
+  grid-template-columns: 58px 1fr auto;
+  align-items: start;
+  gap: 14px;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: 0;
+  padding: 16px 4px;
+  cursor: pointer;
+  color: var(--ink);
+  font-family: inherit;
+}
+.qa-head:hover .q-text { color: var(--accent); }
+
+.q-id {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ink-faint);
+  letter-spacing: 0.04em;
+  padding-top: 4px;
+  font-variant-numeric: tabular-nums;
+}
+.qa.open .q-id { color: var(--accent); }
+
+.q-text {
+  font-size: 17px;
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: -0.005em;
+  text-wrap: pretty;
+}
+
+.q-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 3px;
+}
+
+.tag {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: 3px 6px;
+  white-space: nowrap;
+}
+
+.caret {
+  width: 11px; height: 11px;
+  border-right: 1.6px solid var(--ink-faint);
+  border-bottom: 1.6px solid var(--ink-faint);
+  transform: rotate(45deg);
+  transition: transform 0.18s ease;
+  margin-top: 1px;
+  flex: none;
+}
+.qa.open .caret {
+  transform: rotate(-135deg);
+  border-color: var(--accent);
+}
+
+/* --- Answer: grid-rows trick, no max-height guessing --- */
+.answer-shell {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.22s ease;
+}
+.qa.open .answer-shell { grid-template-rows: 1fr; }
+.answer-clip { overflow: hidden; }
+
+.answer {
+  padding: 2px 4px 26px 72px;
+  max-width: 74ch;
+}
+.answer > * { margin: 0 0 14px; }
+.answer > *:last-child { margin-bottom: 0; }
+.answer p {
+  font-family: var(--serif);
+  font-size: 17px;
+  line-height: 1.62;
+  color: var(--ink);
+}
+.answer ul { padding-left: 20px; }
+.answer li {
+  font-family: var(--serif);
+  font-size: 17px;
+  line-height: 1.55;
+  margin-bottom: 7px;
+}
+.answer strong { font-weight: 600; }
+
+pre.snippet {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.65;
+  background: var(--surface-2);
+  border: 1px solid var(--rule);
+  border-left: 2px solid var(--rule-strong);
+  border-radius: 4px;
+  padding: 12px 14px;
+  overflow-x: auto;
+  white-space: pre;
+  color: var(--ink-soft);
+}
+
+table.mini {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+table.mini th,
+table.mini td {
+  text-align: left;
+  padding: 7px 12px 7px 0;
+  border-bottom: 1px solid var(--rule);
+  vertical-align: top;
+}
+table.mini th {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  font-weight: 500;
+}
+.tablewrap { overflow-x: auto; }
+
+/* --- "Say it like this" - the spoken compression --- */
+.say {
+  border-left: 2px solid var(--accent);
+  background: var(--accent-wash);
+  padding: 11px 14px;
+  border-radius: 0 4px 4px 0;
+}
+.say b {
+  display: block;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 5px;
+  font-weight: 600;
+}
+.say span {
+  font-family: var(--serif);
+  font-size: 16px;
+  line-height: 1.55;
+}
+
+/* --- HTTP status chips - semantic, never the accent --- */
+.sc {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 3px;
+  padding: 1px 5px;
+  white-space: nowrap;
+}
+.sc-ok   { color: var(--ok);   background: var(--ok-bg); }
+.sc-info { color: var(--info); background: var(--info-bg); }
+.sc-warn { color: var(--warn); background: var(--warn-bg); }
+.sc-crit { color: var(--crit); background: var(--crit-bg); }
+
+/* --- Confidence marks --- */
+.marks {
+  display: flex;
+  gap: 6px;
+  padding: 0 4px 18px 72px;
+}
+.mark {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  background: none;
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+.mark:hover { border-color: var(--rule-strong); color: var(--ink-soft); }
+.mark[aria-pressed="true"] { font-weight: 600; }
+.mark.shaky[aria-pressed="true"] {
+  color: var(--warn); border-color: var(--warn); background: var(--warn-bg);
+}
+.mark.solid[aria-pressed="true"] {
+  color: var(--ok); border-color: var(--ok); background: var(--ok-bg);
+}
+
+.qa[data-mark="solid"] .q-id::after {
+  content: " \2022";
+  color: var(--ok);
+}
+.qa[data-mark="shaky"] .q-id::after {
+  content: " \2022";
+  color: var(--warn);
+}
+
+/* ============================================================
+   CONSTANTS STRIP
+   ============================================================ */
+.constants {
+  margin-top: 56px;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 24px 26px;
+  box-shadow: var(--shadow);
+}
+.constants h2 {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0 0 4px;
+  letter-spacing: -0.01em;
+}
+.constants > p {
+  margin: 0 0 20px;
+  color: var(--ink-soft);
+  font-size: 14px;
+  max-width: 62ch;
+}
+.const-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 1px;
+  background: var(--rule);
+  border: 1px solid var(--rule);
+}
+.const {
+  background: var(--surface);
+  padding: 13px 15px;
+}
+.const dt {
+  font-size: 12px;
+  color: var(--ink-soft);
+  margin-bottom: 4px;
+}
+.const dd {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 15px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+.empty {
+  padding: 40px 0;
+  text-align: center;
+  color: var(--ink-faint);
+  font-family: var(--mono);
+  font-size: 13px;
+}
+
+footer {
+  margin-top: 40px;
+  padding-top: 18px;
+  border-top: 1px solid var(--rule);
+  color: var(--ink-faint);
+  font-size: 13px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  justify-content: space-between;
+}
+
+@media (max-width: 620px) {
+  .wrap { padding: 0 16px 72px; }
+  .masthead h1 { font-size: 27px; }
+  .qa-head { grid-template-columns: 46px 1fr auto; gap: 10px; }
+  .answer { padding-left: 0; }
+  .marks { padding-left: 0; }
+  .q-meta .tag { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}
+</style>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <div>
+      <p class="eyebrow">CommerceFlow &middot; .NET 10 microservices</p>
+      <h1>Interview Drill</h1>
+      <p>Twenty-nine questions taken from code we actually wrote &mdash; the Catalog and Identity
+        services. Read the question, answer it out loud, <em>then</em> open it.</p>
+    </div>
+    <div class="score">
+      <b id="scoreValue">0/29</b>
+      <span>marked solid</span>
+    </div>
+  </header>
+
+  <div class="controls">
+    <input class="search" id="search" type="search" placeholder="Search questions and answers&hellip;" aria-label="Search questions">
+    <button class="chip" data-filter="all" aria-pressed="true">All</button>
+    <button class="chip" data-filter="p1" aria-pressed="false">Phase 1</button>
+    <button class="chip" data-filter="p2" aria-pressed="false">Phase 2</button>
+    <button class="chip" data-filter="weak" aria-pressed="false">Needs work</button>
+    <button class="ghost" id="toggleAll">Expand all</button>
+    <button class="ghost" id="resetMarks">Reset marks</button>
+  </div>
+
+  <p class="empty" id="empty" hidden>No questions match that search.</p>
+
+  <!-- ==================================================================
+       PHASE 1
+       ================================================================== -->
+  <section class="phase" data-phase="p1">
+    <div class="phase-head">
+      <h2>Phase 1 &mdash; Catalog Service</h2>
+      <span class="count">14 questions</span>
+    </div>
+    <p class="phase-sub">Four projects, EF Core over SQLite, controllers, filtering, pagination, soft
+      delete. No auth, no messaging, no distributed anything &mdash; which is exactly why it went first.</p>
+
+    <div class="pitch">
+      <h3>The 30-second answer</h3>
+      <blockquote>&ldquo;Catalog is the read-heavy service that owns what a product <em>is</em> &mdash; name,
+        SKU, price, category, active flag. Four projects: a Domain with no dependencies at all, an
+        Application layer with the use cases and DTOs, Infrastructure with EF Core and SQLite, and a thin
+        controller layer. It does filtering, pagination and soft delete. It deliberately does <em>not</em>
+        own stock levels &mdash; that&rsquo;s Inventory&rsquo;s job, with its own database.&rdquo;</blockquote>
+      <div class="flow">
+        <p class="flow-title">POST /api/products &mdash; the flow you must be able to narrate</p>
+<pre class="flow-code">Swagger request
+   -> Kestrel -> middleware (exception handler, Swagger, HTTPS, routing)
+   -> ProductsController.Create        model binding + DataAnnotations run HERE
+   -> ProductService.CreateAsync       category lookup, SKU uniqueness check
+   -> Product.Create                   domain rules, Guid v7, timestamp
+   -> DbContext.Products.Add           change tracker only - still no SQL
+   -> SaveChangesAsync                 INSERT generated and committed
+   -> SQLite (catalog.db)
+   -> 201 Created + Location header</pre>
+      </div>
+    </div>
+
+    <div class="qlist">
+
+      <!-- P1-01 -->
+      <article class="qa" data-id="p1-01" data-phase="p1">
+        <button class="qa-head" type="button">
+          <span class="q-id">P1&middot;01</span>
+          <span class="q-text">Catalog.Api references Catalog.Infrastructure. Doesn&rsquo;t that break the dependency rule?</span>
+          <span class="q-meta"><span class="tag">Architecture</span><span class="caret"></span></span>
+        </button>
+        <div class="answer-shell"><div class="answer-clip"><div class="answer">
+          <p>No. <code>Program.cs</code> is the <strong>composition root</strong> &mdash; the one place that
+            must know concrete types, because something has to say &ldquo;when someone asks for
+            <code>ICatalogDbContext</code>, hand them <code>CatalogDbContext</code>.&rdquo;</p>
+          <p>The rule that actually matters is that no <em>controller</em> and no <em>application service</em>
+            touches an Infrastructure type. In our code <code>Catalog.Infrastructure</code> appears in exactly
+            two places: the <code>.csproj</code> and <code>Program.cs</code>. If you wanted it enforced
+            structurally rather than by discipline, you&rsquo;d add an architecture test with NetArchTest.</p>
+          <div class="say"><b>Say it like this</b><span>The composition root is allowed to know everything.
+            Layering is about where types are <em>used</em>, not where they&rsquo;re referenced.</span></div>
+        </div></div></div>
+        <div class="marks"><button class="mark shaky" aria-pressed="false">Shaky</button><button class="mark solid" aria-pressed="false">Solid</button></div>
+      </article>
+
+      <!-- P1-02 -->
+      <article class="qa" data-id="p1-02" data-phase="p1">
+        <button class="qa-head" type="button">
+          <span class="q-id">P1&middot;02</span>
+          <span class="q-text">Name three things <code>[ApiController]</code> does for you.</span>
+          <span class="q-meta"><span class="tag">ASP.NET</span><span class="caret"></span></span>
+        </button>
+        <div class="answer-shell"><div class="answer-clip"><div class="answer">
+          <ul>
+            <li><strong>Automatic model validation.</strong> An invalid <code>ModelState</code> becomes a
+              <span class="sc sc-warn">400</span> <code>ValidationProblemDetails</code> <em>before</em> your
+              action body runs &mdash; so you never write <code>if (!ModelState.IsValid)</code>.</li>
+            <li><strong>Binding source inference.</strong> Complex types come from the body, simple types
+              from the route or query string, without <code>[FromBody]</code> on everything.</li>
+            <li><strong>Attribute routing becomes mandatory.</strong> Conventional routes are disabled.</li>
+          </ul>
+          <p>Bonus two: it converts error status codes into ProblemDetails, and it infers
+            <code>multipart/form-data</code> for <code>IFormFile</code> parameters.</p>
+          <p>You can prove the first one in the debugger: post a product with <code>"price": 0</code> and your
+            breakpoint in the controller is <em>never hit</em>.</p>
+        </div></div></div>
+        <div class="marks"><button class="mark shaky" aria-pressed="false">Shaky</button><button class="mark solid" aria-pressed="false">Solid</button></div>
+      </article>
+
+      <!-- P1-03 -->
+      <article class="qa" data-id="p1-03" data-phase="p1">
+        <button class="qa-head" type="button">
+          <span class="q-id">P1&middot;03</span>
+          <span class="q-text">What&rsquo;s the difference between <code>ActionResult&lt;T&gt;</code> and <code>IActionResult</code>?</span>
+          <span class="q-meta"><span class="tag">ASP.NET</span><span class="caret"></span></span>
+        </button>
+        <div class="answer-shell"><div class="answer-clip"><div class="answer">
+          <p><code>IActionResult</code> says only &ldquo;some HTTP result&rdquo; &mdash; the payload type is
+            invisible to tooling. <code>ActionResult&lt;T&gt;</code> says &ldquo;either a <code>T</code> or an
+            action result&rdquo;, so ApiExplorer and Swagger infer the 200 response schema without
+            <code>[ProducesResponseType]</code>, and you can <code>return product;</code> directly. It works
+            through implicit conversion operators.</p>
+          <p>It matters for OpenAPI accuracy and for compile-time checking in tests. Where there is no
+            <code>T</code> &mdash; our <code>Deactivate</code>, which only ever returns
+            <span class="sc sc-ok">204</span> or <span class="sc sc-warn">404</span> &mdash;
+            <code>IActionResult</code> is the honest type, which is exactly why we used it there.</p>
+        </div></div></div>
+        <div class="marks"><button class="mark shaky" aria-pressed="false">Shaky</button><button class="mark solid" aria-pressed="false">Solid</button></div>
+      </article>
+
+      <!-- P1-04 -->
+      <article class="qa" data-id="p1-04" data-phase="p1">
+        <button class="qa-head" type="button">
+          <span class="q-id">P1&middot;04</span>
+          <span class="q-text">Why return <span class="sc sc-ok">201</span> from POST, and what does <code>CreatedAtAction</code> actually do?</span>
+          <span class="q-meta"><span class="tag">REST</span><span class="caret"></span></span>
+        </button>
+        <div class="answer-shell"><div class="answer-clip"><div class="answer">
+          <p><span class="sc sc-ok">201</span> states that a new resource now exists at a new URL;
+            <span class="sc sc-ok">200</span> would just mean &ldquo;your request succeeded.&rdquo;</p>
+          <p><code>CreatedAtAction(nameof(GetById), new { id }, body)</code> uses the routing table to
+            generate <code>/api/products/{id}</code> and puts it in the <strong>Location</strong> header, so
+            the client is told where the thing it created lives instead of building the URL itself. Change
+            the route template later and the header follows automatically.</p>
+<pre class="snippet">HTTP/1.1 201 Created
+Location: http://localhost:5101/api/products/01a07c92-3b28-7f20-9d78-72463de8fc47</pre>
+        </div></div></div>
+        <div class="marks"><button class="mark shaky" aria-pressed="false">Shaky</button><button class="mark solid" aria-pressed="false">Solid</button></div>
+      </article>
+
+      <!-- P1-05 -->
+      <article class="qa" data-id="p1-05" data-phase="p1">
+        <button class="qa-head" type="button">
+          <span class="q-id">P1&middot;05</span>
+          <span class="q-text">Why did you store money as an <code>INTEGER</code> count of minor units?</span>
+          <span class="q-meta"><span class="tag">SQLite</span><span class="caret"></span></span>
+        </button>
+        <div class="answer-shell"><div class="answer-clip"><div class="answer">
+          <p>SQLite has no <code>decimal</code> type. EF Core&rsquo;s SQLite provider stores a decimal as
+            <strong>TEXT</strong> and warns that comparisons are unsupported &mdash; so
+            <code>minPrice=1000</code> would compare <em>strings</em>, where <code>"9.99"</code> sorts after
+            <code>"1000.00"</code>. The filter returns wrong rows and never throws, which is the worst kind
+            of bug.</p>
+          <p>Converting to <code>double</code> fixes ordering but breaks exactness. Storing a
+            <code>long</code> of minor units gives exact base-10 values <em>and</em> correct integer
+            comparison. One value converter in <code>ProductConfiguration</code> does it; the domain still
+            works in <code>decimal</code>.</p>
+<pre class="snippet">builder.Property(product =&gt; product.Price)
+    .HasConversion(
+        price =&gt; (long)(price * 100m),
+        minorUnits =&gt; minorUnits / 100m)
+    .HasColumnName("PriceInMinorUnits")
+    .HasColumnType("INTEGER");
+
+-- and the SQL it produces:
+WHERE "p"."PriceInMinorUnits" &gt;= @minPrice   -- DbType = Int64</pre>
+          <div class="say"><b>Say it like this</b><span>Money as TEXT sorts lexicographically. 89.99 is stored
+            as 8999, an integer, so range filters are correct and nothing rounds.</span></div>
+        </div></div></div>
+        <div class="marks"><button class="mark shaky" aria-pressed="false">Shaky</button><button class="mark solid" aria-pressed="false">Solid</button></div>
+      </article>
+
+      <!-- P1-06 -->
+      <article class="qa" data-id="p1-06" data-phase="p1">
+        <button class="qa-head" type="button">
+          <span class="q-id">P1&middot;06</span>
+          <span class="q-text">What does <code>AsNoTracking()</code> change &mdash; and why is it absent from <code>UpdateAsync</code>?</span>
+          <span class="q-meta"><span class="tag">EF Core</span><span class="caret"></span></span>
+        </button>
+        <div class="answer-shell"><div class="answer-clip"><div class="answer">
+          <p>By default EF creates a tracking entry plus a <strong>snapshot</strong> of every loaded entity so
+            <code>SaveChanges</code> can diff old against new. <code>AsNoTracking</code> skips both &mdash;
+            fewer allocations, faster reads, no identity resolution.</p>
+          <p>It&rsquo;s absent from <code>UpdateAsync</code> precisely <em>because</em> we need that snapshot:
+            <code>product.Update(...)</code> mutates the tracked entity and <code>SaveChangesAsync</code>
+            diffs it to emit an <code>UPDATE</code> containing only the changed columns. That&rsquo;s also why
+            there is no <code>_dbContext.Update(product)</code> call anywhere in the codebase.</p>
+        </div></div></div>
+        <div class="marks"><button class="mark shaky" aria-pressed="false">Shaky</button><button class="mark solid" aria-pressed="false">Solid</button></div>
+      </article>
+
+      <!-- P1-07 -->
+      <article class="qa" data-id="p1-07" data-phase="p1">
+        <button class="qa-head" type="button">
+          <span class="q-id">P1&middot;07</span>
+          <span class="q-text">Why is <code>DbContext</code> registered as Scoped? What&rsquo;s a captive dependency?</span>
+          <span class="q-meta"><span class="tag">DI</span><span class="caret"></span></span>
+        </button>
+        <div class="answer-shell"><div class="answer-clip"><div class="answer">
+          <p><code>DbContext</code> isn&rsquo;t thread-safe and its change tracker represents one unit of
+            work, so it&rsquo;s one instance per request.</p>
+          <p>A <strong>captive dependency</strong> is a longer-lived service capturing a shorter-lived one.
+            Register <code>ProductService</code> as a Singleton and it would hold request #1&rsquo;s
+            <code>DbContext</code> forever &mdash; stale data, cross-request leakage, concurrency exceptions.
+            .NET&rsquo;s DI catches this in Development via scope validation and throws at startup.</p>
+        </div></div></div>
+        <div class="marks"><button class="mark shaky" aria-pressed="false">Shaky</button><button class="mark solid" aria-pressed="false">Solid</button></div>
+      </article>
+
+      <!-- P1-08 -->
+      <article class="qa" data-id="p1-08" data-phase="p1">
+        <button class="qa-head" type="button">
+          <span class="q-id">P1&middot;08</span>
+          <span class="q-text">In <code>GetAsync</code>, when does the database actually get contacted?</span>
+          <span class="q-meta"><span class="tag">EF Core</span><span class="caret"></span></span>
+        </button>
+        <div class="answer-shell"><div class="answer-clip"><div class="answer">
+          <p>Never during the <code>if</code> blocks &mdash; those only append to an expression tree.
+            Exactly twice: at <code>CountAsync</code> (a <code>SELECT COUNT(*)</code> carrying the same
+            filters) and at <code>ToListAsync</code> (the page, with <code>ORDER BY</code>,
+            <code>LIMIT</code>, <code>OFFSET</code> and the category <code>JOIN</code>).</p>
+          <p>That&rsquo;s <strong>deferred execution</strong>, and it&rsquo;s why we can build a different SQL
+            statement per request with no string concatenation and no injection risk &mdash; every value
+            becomes a parameter.</p>
+<pre class="snippet">IQueryable&lt;Product&gt; products = _dbContext.Products.AsNoTracking();
+
+if (query.CategoryId is not null) { products = products.Where(...); }
+if (query.MinPrice   is not null) { products = products.Where(...); }
+// still nothing has touched SQLite
+
+var totalCount = await products.CountAsync(ct);   // round trip 1
+var rows       = await products...ToListAsync(ct); // round trip 2</pre>
+        </div></div></div>
+        <div class="marks"><button class="mark shaky" aria-pressed="false">Shaky</button><button class="mark solid" aria-pressed="false">Solid</button></div>
+      </article>
+
+      <!-- P1-09 -->
+      <article class="qa" data-id="p1-09" data-phase="p1">
+        <button class="qa-head" type="button">
+          <span class="q-id">P1&middot;09</span>
+          <span class="q-text">Why <code>EF.Functions.Like</code> instead of <code>string.Contains</code>?</span>
+          <span class="q-meta"><span class="tag">EF Core</span><span class="caret"></span></span>
+        </button>
+        <div class="answer-shell"><div class="answer-clip"><div class="answer">
+          <p><code>Contains</code> translates to SQLite&rsquo;s <code>instr(x, y) &gt; 0</code>, which is
+            <strong>case-sensitive</strong> &mdash; a search box that misses &ldquo;mouse&rdquo; because the
+            row says &ldquo;Mouse&rdquo;. <code>LIKE</code> is case-insensitive for ASCII in SQLite.</p>
+          <p>Two things worth adding, because they show you know the limits: a leading-wildcard
+            <code>LIKE '%x%'</code> can&rsquo;t use an index, so it&rsquo;s a full scan &mdash; at real scale
+            you&rsquo;d move to SQLite FTS5 or a dedicated search index. And this behaviour is
+            <em>provider-specific</em>: the same LINQ behaves differently on PostgreSQL, where you&rsquo;d
+            need <code>ILIKE</code> or a citext column.</p>
+        </div></div></div>
+        <div class="marks"><button class="mark shaky" aria-pressed="false">Shaky</button><button class="mark solid" aria-pressed="false">Solid</button></div>
+      </article>
+
+      <!-- P1-10 -->
+      <article class="qa" data-id="p1-10" data-phase="p1">
+        <button class="qa-head" type="button">
+          <span class="q-id">P1&middot;10</span>
+          <span class="q-text">Why does <code>.OrderBy(p =&gt; p.Name)</code> alone break pagination?</span>
+          <span class="q-meta"><span class="tag">SQL</span><span class="caret"></span></span>
+        </button>
+        <div class="answer-shell"><div class="answer-clip"><div class="answer">
+          <p>Names aren&rsquo;t unique, and SQLite&rsquo;s ordering among equal sort keys is unspecified and
+            may differ between executions. Page 1 and page 2 are <strong>separate queries</strong>, so a row
+            can appear on both or on neither. <code>.ThenBy(p =&gt; p.Id)</code> makes the ordering total and
+            deterministic.</p>
+          <p>Worth adding: <code>OFFSET N</code> still scans and discards N rows, so at scale you switch to
+            keyset pagination &mdash; <code>WHERE (Name, Id) &gt; (@lastName, @lastId)</code>.</p>
+        </div></div></div>
+        <div class="marks"><button class="mark shaky" aria-pressed="false">Shaky</button><button class="mark solid" aria-pressed="false">Solid</button></div>
+      </article>
+
+      <!-- P1-11 -->
+      <article class="qa" data-id="p1-11" data-phase="p1">
+        <button class="qa-head" type="button">
+          <span class="q-id">P1&middot;11</span>
+          <span class="q-text">Duplicate SKU is <span class="sc sc-crit">409</span> but an unknown <code>categoryId</code> is <span class="sc sc-warn">400</span>. Justify both.</span>
+          <span class="q-meta"><span class="tag">REST</span><span class="caret"></span></span>
+        </button>
+        <div class="answer-shell"><div class="answer-clip"><div class="answer">
+          <div class="tablewrap"><table class="mini">
+            <tr><th>Code</th><th>Means</th><th>Test</th></tr>
+            <tr><td><span class="sc sc-warn">400</span></td><td>The request is invalid on its face</td>
+              <td>Fixable by editing the payload without knowing server state</td></tr>
+            <tr><td><span class="sc sc-crit">409</span></td><td>Well-formed and permitted, but collides with current state</td>
+              <td>The identical payload might succeed later</td></tr>
+          </table></div>
+          <p>An unknown <code>categoryId</code> is <span class="sc sc-warn">400</span>, not
+            <span class="sc sc-warn">404</span>, because 404 describes the resource named in the
+            <strong>URL</strong> &mdash; and <code>POST /api/products</code> definitely exists. The defect is
+            a field inside the body, so the body is invalid. Some teams use 422 for this; we standardised on
+            400 to avoid ambiguity, and I can defend either.</p>
+        </div></div></div>
+        <div class="marks"><button class="mark shaky" aria-pressed="false">Shaky</button><button class="mark solid" aria-pressed="false">Solid</button></div>
+      </article>
+
+      <!-- P1-12 -->
+      <article class="qa" data-id="p1-12" data-phase="p1">
+        <button class="qa-head" type="button">
+          <span class="q-id">P1&middot;12</span>
+          <span class="q-text">Why soft delete, and why is a second DELETE still <span class="sc sc-ok">204</span>?</span>
+          <span class="q-meta"><span class="tag">Design</span><span class="caret"></span></span>
+        </button>
+        <div class="answer-shell"><div class="answer-clip"><div class="answer">
+          <p>Orders in another service reference product ids with <strong>no foreign key</strong> &mdash; the
+            databases are physically separate. If the row vanished, order history and reporting would break,
+            and we&rsquo;d lose the name and price needed for audit. So DELETE flips <code>IsActive</code>.</p>
+          <p>The second call still returns <span class="sc sc-ok">204</span> because
+            <code>Deactivate()</code> no-ops when already inactive &mdash; HTTP requires DELETE to be
+            idempotent: same end state, same response.</p>
+          <p>One deliberate omission worth mentioning: we did <em>not</em> add an EF global query filter.
+            <code>HasQueryFilter(p =&gt; p.IsActive)</code> would hide inactive rows from every query, which
+            silently breaks both the <code>?isActive=false</code> filter and the &ldquo;verify the row still
+            exists&rdquo; check.</p>
+        </div></div></div>
+        <div class="marks"><button class="mark shaky" aria-pressed="false">Shaky</button><button class="mark solid" aria-pressed="false">Solid</button></div>
+      </article>
+
+      <!-- P1-13 -->
+      <article class="qa" data-id="p1-13" data-phase="p1">
+        <button class="qa-head" type="button">
+          <span class="q-id">P1&middot;13</span>
+          <span class="q-text">Why does <code>Catalog.Domain.csproj</code> have no references at all?</span>
+          <span class="q-meta"><span class="tag">Architecture</span><span class="caret"></span></span>
+        </button>
+        <div class="answer-shell"><div class="answer-clip"><div class="answer">
+          <p>Because business rules then <em>cannot</em> be written against EF Core, HTTP or JSON &mdash; the
+            compiler enforces it. The consequences are practical, not theoretical:</p>
+          <ul>
+            <li>The domain unit-tests with no test host and no database.</li>
+            <li>An EF Core major-version upgrade cannot break it.</li>
+            <li>Persistence concerns &mdash; table names, column types, the money converter &mdash; are pushed
+              into <code>IEntityTypeConfiguration</code> where they belong.</li>
+          </ul>
+          <p>The emptiness is the design. Open the file in an interview and there is nothing in it.</p>
+        </div></div></div>
+        <div class="marks"><button class="mark shaky" aria-pressed="false">Shaky</button><button class="mark solid" aria-pressed="false">Solid</button></div>
+      </article>
+
+      <!-- P1-14 -->
+      <article class="qa" data-id="p1-14" data-phase="p1">
+        <button class="qa-head" type="button">
+          <span class="q-id">P1&middot;14</span>
+          <span class="q-text">Why both an application SKU check <em>and</em> a unique index?</span>
+          <span class="q-meta"><span class="tag">Concurrency</span><span class="caret"></span></span>
+        </button>
+        <div class="answer-shell"><div class="answer-clip"><div class="answer">
+          <p>Different jobs. The application check produces the <strong>message</strong> &mdash;
+            &ldquo;A product with SKU &lsquo;KEY-MX-001&rsquo; already exists&rdquo; &rarr;
+            <span class="sc sc-crit">409</span>, which a user can act on. The index provides the
+            <strong>guarantee</strong>: between our check and the <code>INSERT</code>, another request can
+            insert the same SKU &mdash; a <strong>TOCTOU race</strong> &mdash; and only the database can stop
+            that.</p>
+          <p>Be honest about the gap: today that rare race would surface as a
+            <span class="sc sc-crit">500</span>. It&rsquo;s commented in the code and deferred to the
+            Inventory phase, where concurrency gets solved properly rather than half-solved here.</p>
+          <div class="say"><b>Say it like this</b><span>The check is for the error message. The index is for
+            correctness. You need both, and knowing which is which is the point.</span></div>
+        </div></div></div>
+        <div class="marks"><button class="mark shaky" aria-pressed="false">Shaky</button><button class="mark solid" aria-pressed="false">Solid</button></div>
+      </article>
+
+    </div>
+  </section>
+
+  <!-- ==================================================================
+       PHASE 2
+       ================================================================== -->
+  <section class="phase" data-phase="p2">
+    <div class="phase-head">
+      <h2>Phase 2 &mdash; Identity Service</h2>
+      <span class="count">15 questions</span>
+    </div>
+    <p class="phase-sub">ASP.NET Core Identity, JWT issuance, refresh-token rotation with reuse detection,
+      roles and lockout. Three projects &mdash; and the missing fourth one is itself an answer.</p>
+
+    <div class="pitch">
+      <h3>The 30-second answer</h3>
+      <blockquote>&ldquo;Identity owns who is asking. It uses ASP.NET Core Identity for the user store and
+        PBKDF2 password hashing, and issues short-lived JWTs plus long-lived refresh tokens that are stored
+        hashed and rotate on every use, with reuse detection. There&rsquo;s no Domain project because the
+        framework owns the user model. Every other service <em>validates</em> those tokens locally &mdash;
+        nobody ever calls Identity to check one.&rdquo;</blockquote>
+      <div class="flow">
+        <p class="flow-title">POST /api/auth/login &mdash; the flow you must be able to narrate</p>
+<pre class="flow-code">AuthController.Login
+   -> AuthService.LoginAsync
+        |- UserManager.FindByEmailAsync     SELECT ... WHERE NormalizedEmail = @p
+        |- IsLockedOutAsync                 checks LockoutEnd  (before the password)
+        |- CheckPasswordAsync               PBKDF2 re-hash + constant-time compare
+        |- ResetAccessFailedCountAsync      UPDATE AspNetUsers
+        `- IssueTokensAsync
+             |- GetRolesAsync               JOIN AspNetUserRoles
+             |- JwtAccessTokenGenerator     HMAC-SHA256 over header.payload
+             |- RefreshToken.Issue          32 random bytes -> SHA-256 -> row
+             `- SaveChangesAsync            one transaction: new token in, old one revoked
+   -> 200 OK { accessToken, refreshToken, ... }</pre>
+      </div>
+    </div>
+
+    <div class="qlist">
+
+      <!-- P2-01 -->
+      <article class="qa" data-id="p2-01" data-phase="p2">
+        <button class="qa-head" type="button">
+          <span class="q-id">P2&middot;01</span>
+          <span class="q-text">Walk me through a JWT. What are the three parts, and which one is secret?</span>
+          <span class="q-meta"><span class="tag">Tokens</span><span class="caret"></span></span>
+        </button>
+        <div class="answer-shell"><div class="answer-clip"><div class="answer">
+          <p><code>header.payload.signature</code> &mdash; three Base64Url segments joined by dots. The header
+            names the algorithm, the payload holds the claims, and the signature is HMAC-SHA256 over
+            <code>header.payload</code> using the signing key.</p>
+          <p><strong>None of it is secret.</strong> The payload is <em>encoded, not encrypted</em> &mdash;
+            anyone holding the token can read every claim. The signature hides nothing; it only proves nobody
+            altered it, because changing one byte invalidates it and an attacker can&rsquo;t compute a new one
+            without the key. So you never put a secret in a token.</p>
+          <p>Here is a real payload from our service, decoded:</p>
+<pre class="snippet">{
+  "aud":   "CommerceFlow",
+  "iss":   "CommerceFlow.Identity",
+  "exp":   1788801544,
+  "sub":   "01a07cd3-8dbf-7748-89e8-6639afd75649",
+  "email": "uday@commerceflow.local",
+  "name":  "Uday L",
+  "jti":   "01a07cd3-baa1-70ef-8b22-f4f6a3a8e615",
+  "role":  "Customer",
+  "iat":   1788800645,
+  "nbf":   1788800645
+}</pre>
+        </div></div></div>
+        <div class="marks"><button class="mark shaky" aria-pressed="false">Shaky</button><button class="mark solid" aria-pressed="false">Solid</button></div>
+      </article>
+
+      <!-- P2-02 -->
+      <article class="qa" data-id="p2-02" data-phase="p2">
+        <button class="qa-head" type="button">
+          <span class="q-id">P2&middot;02</span>
+          <span class="q-text">Why doesn&rsquo;t Catalog call Identity to validate a token?</span>
+          <span class="q-meta"><span class="tag">Security</span><span class="caret"></span></span>
+        </button>
+        <div class="answer-shell"><div class="answer-clip"><div class="answer">
+          <p>Because it doesn&rsquo;t need to. Validation is a local cryptographic check: verify the signature
+            with the key, then check <code>iss</code>, <code>aud</code> and <code>exp</code>. No network call,
+            no shared session store.</p>
+          <p><strong>What it buys:</strong> zero extra latency, and availability &mdash; Catalog keeps
+            enforcing <code>[Authorize]</code> even when Identity is completely down. You can demonstrate that
+            by stopping Identity and watching Catalog still return
+            <span class="sc sc-crit">403</span> correctly.</p>
+          <p><strong>What it costs:</strong> tokens can&rsquo;t be revoked, role changes don&rsquo;t take
+            effect until expiry, and with a <em>symmetric</em> key every service that validates also holds the
+            key that <em>creates</em> tokens &mdash; so a compromised Catalog could mint admin tokens. The
+            production fix is RS256: Identity holds the private key and signs, everyone else gets the public
+            key and can only verify.</p>
+        </div></div></div>
+        <div class="marks"><button class="mark shaky" aria-pressed="false">Shaky</button><button class="mark solid" aria-pressed="false">Solid</button></div>
+      </article>
+
+      <!-- P2-03 -->
+      <article class="qa" data-id="p2-03" data-phase="p2">
+        <button class="qa-head" type="button">
+          <span class="q-id">P2&middot;03</span>
+          <span class="q-text">Why do refresh tokens exist if you already have an access token?</span>
+          <span class="q-meta"><span class="tag">Tokens</span><span class="caret"></span></span>
+        </button>
+        <div class="answer-shell"><div class="answer-clip"><div class="answer">
+          <p>Because a JWT <strong>cannot be revoked</strong>. Its lifetime is exactly how long a stolen one
+            stays useful, so it has to be short &mdash; 15 minutes here. But re-authenticating every 15
+            minutes is unusable.</p>
+          <p>The refresh token squares that circle: it lives in <em>our</em> database, so unlike the JWT it
+            <em>can</em> be revoked, and it&rsquo;s the only long-lived thing.</p>
+          <div class="tablewrap"><table class="mini">
+            <tr><th></th><th>Access token</th><th>Refresh token</th></tr>
+            <tr><td>Lifetime</td><td>15 minutes</td><td>7 days</td></tr>
+            <tr><td>Validated</td><td>Offline, by every service</td><td>By Identity, against a table</td></tr>
+            <tr><td>Revocable</td><td>No</td><td>Yes</td></tr>
+            <tr><td>Sent</td><td>On every request</td><td>Only to <code>/api/auth/refresh</code></td></tr>
+          </table></div>
+        </div></div></div>
+        <div class="marks"><button class="mark shaky" aria-pressed="false">Shaky</button><button class="mark solid" aria-pressed="false">Solid</button></div>
+      </article>
+
+      <!-- P2-04 -->
+      <article class="qa" data-id="p2-04" data-phase="p2">
+        <button class="qa-head" type="button">
+          <span class="q-id">P2&middot;04</span>
+          <span class="q-text">Why hash refresh tokens &mdash; and why SHA-256 rather than the PBKDF2 you use for passwords?</span>
+          <span class="q-meta"><span class="tag">Crypto</span><span class="caret"></span></span>
+        </button>
+        <div class="answer-shell"><div class="answer-clip"><div class="answer">
+          <p>Hashed so a database leak doesn&rsquo;t hand out working credentials &mdash; the same reason
+            passwords are hashed.</p>
+          <p>Plain SHA-256 rather than a slow salted hash because the value is <strong>32 bytes from a
+            CSPRNG</strong>: there&rsquo;s no dictionary, no human-chosen pattern, nothing to brute-force, so
+            key-stretching buys nothing and costs real time on every refresh. Passwords are the opposite
+            &mdash; low entropy, human-chosen, guessable &mdash; which is exactly what PBKDF2&rsquo;s
+            iterations defend against.</p>
+          <p>There&rsquo;s also a mechanical reason: we need to <em>find</em> the row by hash, so the hash must
+            be deterministic. A per-row salt would make lookup impossible.</p>
+          <div class="say"><b>Say it like this</b><span>Slow hashing defends low-entropy secrets. A 256-bit
+            random token isn&rsquo;t one, so SHA-256 is the right tool &mdash; and it has to be deterministic
+            because we look the row up by it.</span></div>
+        </div></div></div>
+        <div class="marks"><button class="mark shaky" aria-pressed="false">Shaky</button><button class="mark solid" aria-pressed="false">Solid</button></div>
+      </article>
+
+      <!-- P2-05 -->
+      <article class="qa" data-id="p2-05" data-phase="p2">
+        <button class="qa-head" type="button">
+          <span class="q-id">P2&middot;05</span>
+          <span class="q-text">What is refresh-token rotation, and what does reuse detection protect against?</span>
+          <span class="q-meta"><span class="tag">Security</span><span class="caret"></span></span>
+        </button>
+        <div class="answer-shell"><div class="answer-clip"><div class="answer">
+          <p><strong>Rotation:</strong> every refresh consumes the token. The old one is revoked and linked to
+            its successor via <code>ReplacedByTokenId</code>, and a new pair is returned. A refresh token is
+            therefore single-use.</p>
+          <p><strong>Reuse detection:</strong> if an <em>already-revoked</em> token is presented, the same
+            token was used twice. There are only two explanations &mdash; it was stolen and the thief is using
+            it, or it was stolen and the legitimate user is. We can&rsquo;t tell which, so we revoke every
+            active token for that user and force a fresh sign-in.</p>
+          <p>Without rotation, a stolen refresh token is a permanent session that never trips any alarm. Our
+            smoke test proves the whole family dies:</p>
+<pre class="snippet">refresh with token A  -&gt; 200, returns token B
+refresh with token A  -&gt; 401   warn: "reuse detected ... all sessions revoked"
+refresh with token B  -&gt; 401   the successor died too</pre>
+        </div></div></div>
+        <div class="marks"><button class="mark shaky" aria-pressed="false">Shaky</button><button class="mark solid" aria-pressed="false">Solid</button></div>
+      </article>
+
+      <!-- P2-06 -->
+      <article class="qa" data-id="p2-06" data-phase="p2">
+        <button class="qa-head" type="button">
+          <span class="q-id">P2&middot;06</span>
+          <span class="q-text"><code>AddIdentityCore</code> vs <code>AddIdentity</code> &mdash; what breaks if you pick wrong?</span>
+          <span class="q-meta"><span class="tag">Identity</span><span class="caret"></span></span>
+        </button>
+        <div class="answer-shell"><div class="answer-clip"><div class="answer">
+          <p><code>AddIdentity</code> also registers <strong>cookie authentication</strong> and makes cookies
+            the default scheme. In a JWT API that means <code>[Authorize]</code> challenges with a
+            <strong>302 redirect to <code>/Account/Login</code></strong> &mdash; a page that doesn&rsquo;t
+            exist &mdash; instead of returning <span class="sc sc-crit">401</span>. It looks like the token is
+            broken; the pipeline is.</p>
+          <p><code>AddIdentityCore</code> gives the user store, password hashing, validators and
+            <code>UserManager</code> without any cookie machinery. For an API, Core is the answer.</p>
+          <p>Follow-up worth pre-empting: we also skipped <code>SignInManager</code> and called
+            <code>CheckPasswordAsync</code> plus <code>AccessFailedAsync</code> ourselves, because
+            <code>SignInManager</code> lives in the ASP.NET Core framework assembly and using it would drag a
+            <code>FrameworkReference</code> into the Application layer.</p>
+        </div></div></div>
+        <div class="marks"><button class="mark shaky" aria-pressed="false">Shaky</button><button class="mark solid" aria-pressed="false">Solid</button></div>
+      </article>
+
+      <!-- P2-07 -->
+      <article class="qa" data-id="p2-07" data-phase="p2">
+        <button class="qa-head" type="button">
+          <span class="q-id">P2&middot;07</span>
+          <span class="q-text"><span class="sc sc-crit">401</span> vs <span class="sc sc-crit">403</span> &mdash; precisely.</span>
+          <span class="q-meta"><span class="tag">Security</span><span class="caret"></span></span>
+        </button>
+        <div class="answer-shell"><div class="answer-clip"><div class="answer">
+          <div class="tablewrap"><table class="mini">
+            <tr><th>Code</th><th>Means</th><th>Would retrying help?</th></tr>
+            <tr><td><span class="sc sc-crit">401</span> Unauthorized</td>
+              <td>Unauthenticated. No token, expired token, bad signature &mdash; we don&rsquo;t know who you are.</td>
+              <td>Yes, with better credentials</td></tr>
+            <tr><td><span class="sc sc-crit">403</span> Forbidden</td>
+              <td>Authenticated. Your token is perfectly valid, we know exactly who you are, and you still may not.</td>
+              <td>Never</td></tr>
+          </table></div>
+          <p>The names are historically backwards &mdash; 401 should have been called
+            &ldquo;Unauthenticated&rdquo;. Saying that out loud shows you know the spec rather than the folk
+            wisdom.</p>
+        </div></div></div>
+        <div class="marks"><button class="mark shaky" aria-pressed="false">Shaky</button><button class="mark solid" aria-pressed="false">Solid</button></div>
+      </article>
+
+      <!-- P2-08 -->
+      <article class="qa" data-id="p2-08" data-phase="p2">
+        <button class="qa-head" type="button">
+          <span class="q-id">P2&middot;08</span>
+          <span class="q-text">What happens if <code>UseAuthorization</code> comes before <code>UseAuthentication</code>?</span>
+          <span class="q-meta"><span class="tag">ASP.NET</span><span class="caret"></span></span>
+        </button>
+        <div class="answer-shell"><div class="answer-clip"><div class="answer">
+          <p>Every authenticated request returns <span class="sc sc-crit">401</span>.</p>
+          <p><code>UseAuthentication</code> reads the <code>Authorization</code> header, validates the token
+            and populates <code>HttpContext.User</code>. <code>UseAuthorization</code> then checks
+            <code>[Authorize]</code> against that user. Reverse them and the check runs against an empty,
+            unauthenticated principal, so it always fails &mdash; and it looks like your tokens are broken
+            when the pipeline is.</p>
+          <p>Middleware order is behaviour, not style: each call wraps the ones after it.</p>
+        </div></div></div>
+        <div class="marks"><button class="mark shaky" aria-pressed="false">Shaky</button><button class="mark solid" aria-pressed="false">Solid</button></div>
+      </article>
+
+      <!-- P2-09 -->
+      <article class="qa" data-id="p2-09" data-phase="p2">
+        <button class="qa-head" type="button">
+          <span class="q-id">P2&middot;09</span>
+          <span class="q-text">What is <code>ClockSkew</code>, why is the default five minutes, and why did you change it?</span>
+          <span class="q-meta"><span class="tag">Tokens</span><span class="caret"></span></span>
+        </button>
+        <div class="answer-shell"><div class="answer-clip"><div class="answer">
+          <p>It&rsquo;s the tolerance applied to <code>exp</code> and <code>nbf</code> when validating. It
+            exists because server clocks drift: a token issued by a machine 30 seconds ahead would otherwise
+            look not-yet-valid on the receiver.</p>
+          <p>The default is <strong>five minutes</strong>, which means an &ldquo;expired&rdquo; token keeps
+            working for up to five more minutes. That makes a 15-minute expiry effectively 20, and makes
+            expiry impossible to demonstrate in a debugger. We set 30 seconds because everything runs on one
+            machine.</p>
+          <div class="say"><b>Say it like this</b><span>Most people never touch it and then wonder why expired
+            tokens still work. It should be a deliberate number, not an inherited default.</span></div>
+        </div></div></div>
+        <div class="marks"><button class="mark shaky" aria-pressed="false">Shaky</button><button class="mark solid" aria-pressed="false">Solid</button></div>
+      </article>
+
+      <!-- P2-10 -->
+      <article class="qa" data-id="p2-10" data-phase="p2">
+        <button class="qa-head" type="button">
+          <span class="q-id">P2&middot;10</span>
+          <span class="q-text">Login returns the same response for a wrong password and an unknown email. Why &mdash; and where did you break that rule?</span>
+          <span class="q-meta"><span class="tag">Security</span><span class="caret"></span></span>
+        </button>
+        <div class="answer-shell"><div class="answer-clip"><div class="answer">
+          <p>To prevent <strong>user enumeration</strong>. If the two responses differed, an attacker could
+            feed a list of email addresses to the login endpoint and learn which ones have accounts &mdash;
+            valuable for credential stuffing and for targeted phishing &mdash; before guessing a single
+            password. Ours are byte-identical apart from the trace id.</p>
+          <p>We broke it deliberately in two places, and being able to name them is the point:</p>
+          <ul>
+            <li><strong>Registration</strong> returns <span class="sc sc-crit">409</span> &ldquo;email already
+              registered&rdquo;. A sign-up form that can&rsquo;t say &ldquo;you already have an account&rdquo;
+              is close to unusable, and the standard mitigation &mdash; always return
+              <span class="sc sc-ok">202</span> and send an email instead &mdash; needs email delivery this
+              project doesn&rsquo;t have.</li>
+            <li><strong>Lockout</strong> gets its own message. A user told only &ldquo;invalid
+              password&rdquo; will keep trying and stay locked out forever.</li>
+          </ul>
+        </div></div></div>
+        <div class="marks"><button class="mark shaky" aria-pressed="false">Shaky</button><button class="mark solid" aria-pressed="false">Solid</button></div>
+      </article>
+
+      <!-- P2-11 -->
+      <article class="qa" data-id="p2-11" data-phase="p2">
+        <button class="qa-head" type="button">
+          <span class="q-id">P2&middot;11</span>
+          <span class="q-text">Roles are baked into the token. What happens when you remove someone&rsquo;s Admin role?</span>
+          <span class="q-meta"><span class="tag">Security</span><span class="caret"></span></span>
+        </button>
+        <div class="answer-shell"><div class="answer-clip"><div class="answer">
+          <p>Nothing, until their access token expires. They keep admin rights for up to 15 minutes. That is
+            the fundamental trade-off of stateless authentication, and pretending otherwise is the wrong
+            answer.</p>
+          <p>Mitigations, in increasing cost:</p>
+          <ul>
+            <li>Keep access-token lifetimes short &mdash; what we do; it bounds the window.</li>
+            <li>Revoke their refresh tokens, so the session can&rsquo;t continue past that window.</li>
+            <li>Add a per-user version claim (Identity already maintains a <code>SecurityStamp</code>) and
+              check it &mdash; but that reintroduces a lookup.</li>
+            <li>A <code>jti</code> blacklist consulted on every request in every service &mdash; which gives
+              up the whole benefit of stateless tokens.</li>
+            <li>In a true emergency, rotate the signing key, which invalidates every token everywhere.</li>
+          </ul>
+        </div></div></div>
+        <div class="marks"><button class="mark shaky" aria-pressed="false">Shaky</button><button class="mark solid" aria-pressed="false">Solid</button></div>
+      </article>
+
+      <!-- P2-12 -->
+      <article class="qa" data-id="p2-12" data-phase="p2">
+        <button class="qa-head" type="button">
+          <span class="q-id">P2&middot;12</span>
+          <span class="q-text">What can logout <em>not</em> do?</span>
+          <span class="q-meta"><span class="tag">Tokens</span><span class="caret"></span></span>
+        </button>
+        <div class="answer-shell"><div class="answer-clip"><div class="answer">
+          <p>It cannot invalidate the access token. That&rsquo;s a signed JWT validated offline by every
+            service &mdash; nobody asks us for permission. It stays valid until <code>exp</code>, up to 15
+            minutes.</p>
+          <p>Logout revokes the <em>refresh</em> token, which stops the session continuing beyond that window.
+            Instant revocation would need a blacklist consulted on every request across every service &mdash;
+            a network hop and a shared store on the hot path, which is precisely what stateless tokens exist
+            to avoid.</p>
+          <p>Our logout also returns <span class="sc sc-ok">204</span> for an <em>unknown</em> token, so it
+            can&rsquo;t be used to probe which tokens are real.</p>
+        </div></div></div>
+        <div class="marks"><button class="mark shaky" aria-pressed="false">Shaky</button><button class="mark solid" aria-pressed="false">Solid</button></div>
+      </article>
+
+      <!-- P2-13 -->
+      <article class="qa" data-id="p2-13" data-phase="p2">
+        <button class="qa-head" type="button">
+          <span class="q-id">P2&middot;13</span>
+          <span class="q-text">Why does registration return <span class="sc sc-ok">201</span> with no tokens instead of signing the user in?</span>
+          <span class="q-meta"><span class="tag">REST</span><span class="caret"></span></span>
+        </button>
+        <div class="answer-shell"><div class="answer-clip"><div class="answer">
+          <p>Registration creates a user; signing in issues credentials. They are different operations with
+            different failure modes. Conflating them gives you an anonymous endpoint that hands out access
+            tokens, and it hides the step a real system wants in between &mdash; email confirmation.</p>
+          <p><span class="sc sc-ok">201 Created</span> with a <code>Location</code> header is also the honest
+            description of what happened: a new resource exists at
+            <code>/api/users/{id}</code>. A token isn&rsquo;t a resource at a URL.</p>
+          <p>Plenty of real APIs do auto-login, so this is a judgement call &mdash; what matters is having a
+            reason.</p>
+        </div></div></div>
+        <div class="marks"><button class="mark shaky" aria-pressed="false">Shaky</button><button class="mark solid" aria-pressed="false">Solid</button></div>
+      </article>
+
+      <!-- P2-14 -->
+      <article class="qa" data-id="p2-14" data-phase="p2">
+        <button class="qa-head" type="button">
+          <span class="q-id">P2&middot;14</span>
+          <span class="q-text">Why are roles seeded in the migration but the admin user seeded at startup?</span>
+          <span class="q-meta"><span class="tag">EF Core</span><span class="caret"></span></span>
+        </button>
+        <div class="answer-shell"><div class="answer-clip"><div class="answer">
+          <div class="tablewrap"><table class="mini">
+            <tr><th></th><th>Roles</th><th>Admin user</th></tr>
+            <tr><td>Seeded by</td><td><code>HasData</code> &rarr; the migration</td><td>Startup seeder, Development only</td></tr>
+            <tr><td>Why</td><td>Static reference data; must exist before any user can be assigned one</td>
+              <td>Needs <code>UserManager</code> to hash a password &mdash; a DI service a migration can&rsquo;t reach</td></tr>
+            <tr><td>Also</td><td>Applying the migration yields a correct database</td>
+              <td>A password hash in source control would be identical in every environment</td></tr>
+          </table></div>
+          <p>And the <code>HasData</code> gotcha worth volunteering: every seeded value must be a
+            <strong>hard-coded constant</strong>. A <code>Guid.NewGuid()</code> or a random
+            <code>ConcurrencyStamp</code> changes the model on every build and generates an endless stream of
+            &ldquo;seed data changed&rdquo; migrations.</p>
+          <p>Development-only matters too: software that quietly grants itself an administrator at startup is
+            a backdoor, however well intentioned.</p>
+        </div></div></div>
+        <div class="marks"><button class="mark shaky" aria-pressed="false">Shaky</button><button class="mark solid" aria-pressed="false">Solid</button></div>
+      </article>
+
+      <!-- P2-15 -->
+      <article class="qa" data-id="p2-15" data-phase="p2">
+        <button class="qa-head" type="button">
+          <span class="q-id">P2&middot;15</span>
+          <span class="q-text">Why does <code>ApplicationUser</code> have public setters when <code>Product</code> had private ones?</span>
+          <span class="q-meta"><span class="tag">Architecture</span><span class="caret"></span></span>
+        </button>
+        <div class="answer-shell"><div class="answer-clip"><div class="answer">
+          <p>Because we don&rsquo;t own the type. <code>UserManager</code> and the EF Core Identity stores
+            assign these properties directly &mdash; <code>NormalizedEmail</code>,
+            <code>SecurityStamp</code>, <code>AccessFailedCount</code>, <code>LockoutEnd</code> are all
+            written by the framework. Private setters plus factory methods would fight it and protect nothing,
+            because the invariants are already enforced by <code>UserManager</code>.</p>
+          <p><code>Product</code> was ours end to end, so encapsulation there is real and load-bearing.</p>
+          <p>This is also the answer to &ldquo;why is there no <code>Identity.Domain</code> project?&rdquo;
+            &mdash; ASP.NET Core Identity <em>is</em> the domain model here. A hand-rolled <code>User</code>
+            aggregate on top would be duplicated indirection protecting nothing.</p>
+          <div class="say"><b>Say it like this</b><span>The rule isn&rsquo;t &ldquo;always private
+            setters&rdquo;. It&rsquo;s &ldquo;follow the conventions of whoever owns the model&rdquo; &mdash;
+            and know which case you&rsquo;re in.</span></div>
+        </div></div></div>
+        <div class="marks"><button class="mark shaky" aria-pressed="false">Shaky</button><button class="mark solid" aria-pressed="false">Solid</button></div>
+      </article>
+
+    </div>
+  </section>
+
+  <!-- ==================================================================
+       CONSTANTS
+       ================================================================== -->
+  <section class="constants">
+    <h2>Numbers worth memorising</h2>
+    <p>Interviewers probe specifics. These are the real values from this codebase &mdash; being able to quote
+      them is the difference between having read about JWTs and having built one.</p>
+    <div class="const-grid">
+      <div class="const"><dt>Access token lifetime</dt><dd>15 minutes</dd></div>
+      <div class="const"><dt>Refresh token lifetime</dt><dd>7 days</dd></div>
+      <div class="const"><dt>Default <code>ClockSkew</code></dt><dd>5 min &rarr; set to 30 s</dd></div>
+      <div class="const"><dt>Lockout threshold</dt><dd>5 attempts / 5 min</dd></div>
+      <div class="const"><dt>Refresh token entropy</dt><dd>32 bytes (256 bit)</dd></div>
+      <div class="const"><dt>Stored token hash</dt><dd>SHA-256, 44 chars</dd></div>
+      <div class="const"><dt>Password hashing</dt><dd>PBKDF2, 100k+ iters</dd></div>
+      <div class="const"><dt>Signing algorithm</dt><dd>HMAC-SHA256</dd></div>
+      <div class="const"><dt>Min signing key</dt><dd>32 chars (256 bit)</dd></div>
+      <div class="const"><dt>Identity tables</dt><dd>7 + RefreshTokens</dd></div>
+      <div class="const"><dt>Price 89.99 stored as</dt><dd>8999 INTEGER</dd></div>
+      <div class="const"><dt>Max <code>pageSize</code></dt><dd>100</dd></div>
+      <div class="const"><dt>Primary keys</dt><dd>Guid v7, time-ordered</dd></div>
+      <div class="const"><dt>Catalog ports</dt><dd>5101 / 7101</dd></div>
+      <div class="const"><dt>Identity ports</dt><dd>5102 / 7102</dd></div>
+      <div class="const"><dt>Target framework</dt><dd>net10.0 (LTS)</dd></div>
+    </div>
+  </section>
+
+  <footer>
+    <span>CommerceFlow &mdash; Phase 1 Catalog, Phase 2 Identity. Next: securing Catalog with these tokens.</span>
+    <span class="mono">29 questions</span>
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var STORE = "commerceflow-drill-marks-v1";
+  var items = Array.prototype.slice.call(document.querySelectorAll(".qa"));
+  var total = items.length;
+  var scoreValue = document.getElementById("scoreValue");
+  var searchInput = document.getElementById("search");
+  var emptyNote = document.getElementById("empty");
+  var chips = Array.prototype.slice.call(document.querySelectorAll(".chip"));
+  var toggleAllBtn = document.getElementById("toggleAll");
+  var resetBtn = document.getElementById("resetMarks");
+
+  var activeFilter = "all";
+  var marks = load();
+
+  function load() {
+    try {
+      var raw = window.localStorage.getItem(STORE);
+      return raw ? JSON.parse(raw) : {};
+    } catch (err) {
+      // Private windows, cleared site data, or a browser blocking storage.
+      // The page must work perfectly without it.
+      return {};
+    }
+  }
+
+  function save() {
+    try {
+      window.localStorage.setItem(STORE, JSON.stringify(marks));
+    } catch (err) {
+      /* progress simply is not remembered; nothing else changes */
+    }
+  }
+
+  function paintScore() {
+    var solid = 0;
+    for (var key in marks) {
+      if (Object.prototype.hasOwnProperty.call(marks, key) && marks[key] === "solid") { solid++; }
+    }
+    scoreValue.textContent = solid + "/" + total;
+  }
+
+  function applyMark(article) {
+    var id = article.getAttribute("data-id");
+    var state = marks[id] || "";
+    if (state) {
+      article.setAttribute("data-mark", state);
+    } else {
+      article.removeAttribute("data-mark");
+    }
+    article.querySelectorAll(".mark").forEach(function (btn) {
+      var kind = btn.classList.contains("solid") ? "solid" : "shaky";
+      btn.setAttribute("aria-pressed", state === kind ? "true" : "false");
+    });
+  }
+
+  function matchesFilter(article) {
+    if (activeFilter === "all") { return true; }
+    if (activeFilter === "weak") {
+      return marks[article.getAttribute("data-id")] !== "solid";
+    }
+    return article.getAttribute("data-phase") === activeFilter;
+  }
+
+  function applyFilters() {
+    var term = searchInput.value.trim().toLowerCase();
+    var shown = 0;
+
+    items.forEach(function (article) {
+      var hit = matchesFilter(article) &&
+        (term === "" || article.textContent.toLowerCase().indexOf(term) !== -1);
+      article.hidden = !hit;
+      if (hit) { shown++; }
+    });
+
+    // Hide a phase heading when nothing in it survived the filter.
+    document.querySelectorAll(".phase").forEach(function (section) {
+      var any = section.querySelectorAll(".qa:not([hidden])").length > 0;
+      section.hidden = !any;
+    });
+
+    emptyNote.hidden = shown !== 0;
+  }
+
+  items.forEach(function (article) {
+    applyMark(article);
+
+    article.querySelector(".qa-head").addEventListener("click", function () {
+      article.classList.toggle("open");
+    });
+
+    article.querySelectorAll(".mark").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var id = article.getAttribute("data-id");
+        var kind = btn.classList.contains("solid") ? "solid" : "shaky";
+        marks[id] = marks[id] === kind ? "" : kind;
+        if (!marks[id]) { delete marks[id]; }
+        applyMark(article);
+        paintScore();
+        save();
+        if (activeFilter === "weak") { applyFilters(); }
+      });
+    });
+  });
+
+  chips.forEach(function (chip) {
+    chip.addEventListener("click", function () {
+      activeFilter = chip.getAttribute("data-filter");
+      chips.forEach(function (other) {
+        other.setAttribute("aria-pressed", other === chip ? "true" : "false");
+      });
+      applyFilters();
+    });
+  });
+
+  searchInput.addEventListener("input", applyFilters);
+
+  toggleAllBtn.addEventListener("click", function () {
+    var visible = items.filter(function (a) { return !a.hidden; });
+    var anyClosed = visible.some(function (a) { return !a.classList.contains("open"); });
+    visible.forEach(function (a) { a.classList.toggle("open", anyClosed); });
+    toggleAllBtn.textContent = anyClosed ? "Collapse all" : "Expand all";
+  });
+
+  resetBtn.addEventListener("click", function () {
+    marks = {};
+    save();
+    items.forEach(applyMark);
+    paintScore();
+    applyFilters();
+  });
+
+  // Open the first question of each phase so the answer style is visible
+  // in the page's resting state.
+  document.querySelectorAll('.qa[data-id="p1-01"], .qa[data-id="p2-01"]')
+    .forEach(function (a) { a.classList.add("open"); });
+
+  paintScore();
+  applyFilters();
+})();
+</script>

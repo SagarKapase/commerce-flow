@@ -1,0 +1,44 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <!--
+    ===================================================================
+    NOT EVERY MICROSERVICE IS A WEB API.
+    ===================================================================
+
+    Microsoft.NET.Sdk.Worker, not Sdk.Web. There is no Kestrel here, no port,
+    no Swagger, no controller, no launchSettings applicationUrl - and there is
+    no gateway route to it, because there is nothing to route TO.
+
+    The temptation, when every other service in a solution looks the same, is
+    to give this one a Web SDK and a /health endpoint "for consistency". Resist
+    it. Architecture should reflect responsibility: this service's job is to
+    react to things that happened elsewhere, and reacting needs no inbox on
+    port 7107.
+
+    It is also the clearest possible demonstration of what a message broker
+    buys you. Ordering does not call Notification. Ordering does not know
+    Notification exists - there is no client, no base URL, no timeout, no
+    retry policy, and nothing to configure when a second consumer is added
+    next month. Compare that with the Basket and Inventory clients in
+    Ordering.Infrastructure, each of which had to be written, configured,
+    timed out and failure-handled by hand.
+
+    Stop this worker and orders still complete; the messages wait in its queue.
+    Stop Inventory in Phase 8 and orders failed with a 503. That difference is
+    the whole argument for asynchronous messaging, and you can demonstrate it
+    in thirty seconds.
+  -->
+
+  <PropertyGroup>
+    <UserSecretsId>32c28cee-8f4b-4a0d-b684-8d7883a0d344</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\BuildingBlocks\CommerceFlow.BuildingBlocks.Messaging\CommerceFlow.BuildingBlocks.Messaging.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.12" />
+  </ItemGroup>
+
+</Project>

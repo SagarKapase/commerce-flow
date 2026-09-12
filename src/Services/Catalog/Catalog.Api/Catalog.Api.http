@@ -1,0 +1,146 @@
+@Catalog_HostAddress = https://localhost:7101
+@Identity_HostAddress = https://localhost:7102
+
+################################################################
+# PHASE 3 - get a token first
+################################################################
+
+### 0a. Log in as the seeded ADMIN, copy "accessToken" into @adminToken below
+POST {{Identity_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@commerceflow.local",
+  "password": "Admin#12345"
+}
+
+### 0b. Log in as a CUSTOMER (register first if needed), copy into @customerToken
+POST {{Identity_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "cust@commerceflow.local",
+  "password": "Str0ngPass"
+}
+
+@adminToken = PASTE-ADMIN-ACCESS-TOKEN-HERE
+@customerToken = PASTE-CUSTOMER-ACCESS-TOKEN-HERE
+
+################################################################
+# The authorization gates
+################################################################
+
+### 1. Anonymous read -> 200. The shop front stays public.
+GET {{Catalog_HostAddress}}/api/products
+
+### 2. Write with NO token -> 401 Unauthorized ("we don't know who you are")
+POST {{Catalog_HostAddress}}/api/categories
+Content-Type: application/json
+
+{
+  "name": "Keyboards",
+  "slug": "keyboards"
+}
+
+### 3. Write with a CUSTOMER token -> 403 Forbidden ("we know you, and no")
+POST {{Catalog_HostAddress}}/api/categories
+Content-Type: application/json
+Authorization: Bearer {{customerToken}}
+
+{
+  "name": "Keyboards",
+  "slug": "keyboards"
+}
+
+### 4. Write with an ADMIN token -> 201 Created
+POST {{Catalog_HostAddress}}/api/categories
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "name": "Keyboards",
+  "slug": "keyboards"
+}
+
+### 5. Tampered token (change one character) -> 401
+POST {{Catalog_HostAddress}}/api/categories
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}X
+
+{
+  "name": "Hack",
+  "slug": "hack"
+}
+
+@categoryId = PASTE-THE-CATEGORY-ID-HERE
+
+### 6. Create a product as ADMIN -> 201.
+###    NOW STOP THE IDENTITY SERVICE AND RUN THIS AGAIN - it still works.
+POST {{Catalog_HostAddress}}/api/products
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "name": "Logitech MX Keys",
+  "description": "Wireless mechanical keyboard",
+  "sku": "KEY-MX-001",
+  "price": 8999.00,
+  "categoryId": "{{categoryId}}"
+}
+
+@productId = PASTE-THE-PRODUCT-ID-HERE
+
+### 7. Update as ADMIN -> 200
+PUT {{Catalog_HostAddress}}/api/products/{{productId}}
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "name": "Logitech MX Keys S",
+  "description": "Wireless mechanical keyboard, 2024 model",
+  "sku": "KEY-MX-001",
+  "price": 9499.00,
+  "categoryId": "{{categoryId}}"
+}
+
+### 8. Soft delete as ADMIN -> 204
+DELETE {{Catalog_HostAddress}}/api/products/{{productId}}
+Authorization: Bearer {{adminToken}}
+
+################################################################
+# Phase 1 regression - these must all still behave
+################################################################
+
+### 9. Duplicate SKU -> 409 Conflict
+POST {{Catalog_HostAddress}}/api/products
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "name": "Duplicate",
+  "description": "Should be rejected",
+  "sku": "key-mx-001",
+  "price": 100.00,
+  "categoryId": "{{categoryId}}"
+}
+
+### 10. Invalid price -> 400. Note it is 400, not 403:
+###     authorization runs BEFORE model validation, so an admin still gets
+###     told what is wrong with the body.
+POST {{Catalog_HostAddress}}/api/products
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "name": "Broken",
+  "description": "Zero price",
+  "sku": "BAD-001",
+  "price": 0,
+  "categoryId": "{{categoryId}}"
+}
+
+### 11. Search, filter, paginate - all still anonymous
+GET {{Catalog_HostAddress}}/api/products?search=keyboard&page=1&pageSize=20
+
+### 12. Price range - proves the money conversion still works
+GET {{Catalog_HostAddress}}/api/products?minPrice=1000&maxPrice=9000

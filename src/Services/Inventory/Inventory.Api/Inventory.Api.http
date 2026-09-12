@@ -1,0 +1,216 @@
+@Inventory_HostAddress = https://localhost:7104
+@Identity_HostAddress = https://localhost:7102
+
+@productA = aaaaaaaa-0000-4000-8000-000000000001
+@productB = aaaaaaaa-0000-4000-8000-000000000002
+@lastOne  = aaaaaaaa-0000-4000-8000-00000000000f
+
+################################################################
+# Tokens
+################################################################
+
+### 0a. Admin - needed for stock adjustments
+POST {{Identity_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@commerceflow.local",
+  "password": "Admin#12345"
+}
+
+### 0b. Customer - enough for reservations and stock reads
+POST {{Identity_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "alice@commerceflow.local",
+  "password": "Str0ngPass"
+}
+
+@adminToken = PASTE-ADMIN-ACCESS-TOKEN-HERE
+@customerToken = PASTE-CUSTOMER-ACCESS-TOKEN-HERE
+
+################################################################
+# Stock arrives
+################################################################
+
+### 1. A customer tries to adjust stock -> 403
+POST {{Inventory_HostAddress}}/api/inventory/adjustments
+Content-Type: application/json
+Authorization: Bearer {{customerToken}}
+
+{
+  "productId": "{{productA}}",
+  "quantityChange": 10,
+  "reason": "Should be forbidden"
+}
+
+### 2. Admin receives 10 units. The stock record is CREATED by this call -
+###    there is no separate "create stock" endpoint to forget.
+POST {{Inventory_HostAddress}}/api/inventory/adjustments
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "productId": "{{productA}}",
+  "quantityChange": 10,
+  "reason": "Initial delivery"
+}
+
+### 3. And one unit of a second product
+POST {{Inventory_HostAddress}}/api/inventory/adjustments
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "productId": "{{productB}}",
+  "quantityChange": 1,
+  "reason": "Sample unit"
+}
+
+### 4. Read the stock position
+GET {{Inventory_HostAddress}}/api/inventory/{{productA}}
+Authorization: Bearer {{customerToken}}
+
+################################################################
+# Reserving
+################################################################
+
+### 5. Reserve 3 -> 201. Watch available fall to 7, reserved rise to 3,
+###    and TOTAL stay at 10. Nothing has left the shelf.
+POST {{Inventory_HostAddress}}/api/inventory/reservations
+Content-Type: application/json
+Authorization: Bearer {{customerToken}}
+
+{
+  "referenceId": "11111111-0000-4000-8000-000000000001",
+  "lines": [
+    { "productId": "{{productA}}", "quantity": 3 }
+  ]
+}
+
+@reservationId = PASTE-THE-RESERVATION-ID-HERE
+
+### 6. Confirm the totals moved
+GET {{Inventory_HostAddress}}/api/inventory/{{productA}}
+Authorization: Bearer {{customerToken}}
+
+### 7. Ask for more than exists -> 409 with the exact numbers
+POST {{Inventory_HostAddress}}/api/inventory/reservations
+Content-Type: application/json
+Authorization: Bearer {{customerToken}}
+
+{
+  "referenceId": "11111111-0000-4000-8000-000000000002",
+  "lines": [
+    { "productId": "{{productA}}", "quantity": 99 }
+  ]
+}
+
+### 8. ALL OR NOTHING. Line 1 is satisfiable, line 2 is not -> 409.
+###    Then re-run #6: line 1 was NOT reserved. One transaction, one outcome.
+POST {{Inventory_HostAddress}}/api/inventory/reservations
+Content-Type: application/json
+Authorization: Bearer {{customerToken}}
+
+{
+  "referenceId": "11111111-0000-4000-8000-000000000003",
+  "lines": [
+    { "productId": "{{productA}}", "quantity": 2 },
+    { "productId": "{{productB}}", "quantity": 5 }
+  ]
+}
+
+### 9. A product Inventory has never counted -> 400, not 409
+POST {{Inventory_HostAddress}}/api/inventory/reservations
+Content-Type: application/json
+Authorization: Bearer {{customerToken}}
+
+{
+  "referenceId": "11111111-0000-4000-8000-000000000004",
+  "lines": [
+    { "productId": "00000000-0000-0000-0000-000000000099", "quantity": 1 }
+  ]
+}
+
+################################################################
+# The state machine
+################################################################
+
+### 10. Confirm -> 200, status Confirmed. Re-run #6: TOTAL finally drops.
+POST {{Inventory_HostAddress}}/api/inventory/reservations/{{reservationId}}/confirm
+Authorization: Bearer {{customerToken}}
+
+### 11. Confirm AGAIN -> 200, and stock does NOT move a second time.
+###     This is what makes at-least-once message delivery survivable.
+POST {{Inventory_HostAddress}}/api/inventory/reservations/{{reservationId}}/confirm
+Authorization: Bearer {{customerToken}}
+
+### 12. Release something already confirmed -> 409. The goods have shipped;
+###     taking them back is a refund, not a column update.
+POST {{Inventory_HostAddress}}/api/inventory/reservations/{{reservationId}}/release
+Authorization: Bearer {{customerToken}}
+
+### 13. A fresh reservation to release instead
+POST {{Inventory_HostAddress}}/api/inventory/reservations
+Content-Type: application/json
+Authorization: Bearer {{customerToken}}
+
+{
+  "referenceId": "11111111-0000-4000-8000-000000000005",
+  "lines": [
+    { "productId": "{{productA}}", "quantity": 2 }
+  ]
+}
+
+@releaseId = PASTE-THE-SECOND-RESERVATION-ID-HERE
+
+### 14. Release -> 200, stock returns to available
+POST {{Inventory_HostAddress}}/api/inventory/reservations/{{releaseId}}/release
+Authorization: Bearer {{customerToken}}
+
+### 15. Release AGAIN -> 200, and stock is NOT restored twice.
+###     Compensation runs when things have already gone wrong, so it will
+###     be retried. A compensating action that fails on retry is a saga
+###     that cannot finish unwinding.
+POST {{Inventory_HostAddress}}/api/inventory/reservations/{{releaseId}}/release
+Authorization: Bearer {{customerToken}}
+
+################################################################
+# The race - see the debug checklist for the breakpoint version
+################################################################
+
+### 16. Put ONE unit of a product in stock
+POST {{Inventory_HostAddress}}/api/inventory/adjustments
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "productId": "{{lastOne}}",
+  "quantityChange": 1,
+  "reason": "The last one in the shop"
+}
+
+### 17. Send this several times as fast as you can click.
+###     Exactly one 201, the rest 409. One unit, sold once.
+POST {{Inventory_HostAddress}}/api/inventory/reservations
+Content-Type: application/json
+Authorization: Bearer {{customerToken}}
+
+{
+  "referenceId": "22222222-0000-4000-8000-000000000001",
+  "lines": [
+    { "productId": "{{lastOne}}", "quantity": 1 }
+  ]
+}
+
+### 18. Stock cannot go negative and cannot eat reserved units
+POST {{Inventory_HostAddress}}/api/inventory/adjustments
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "productId": "{{lastOne}}",
+  "quantityChange": -50,
+  "reason": "Write-off larger than stock"
+}

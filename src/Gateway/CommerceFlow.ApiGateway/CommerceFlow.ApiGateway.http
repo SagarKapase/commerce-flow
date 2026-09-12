@@ -1,0 +1,147 @@
+@Gateway = https://localhost:7100
+
+################################################################
+# EVERY REQUEST IN THIS FILE GOES TO PORT 7100.
+#
+# Seven processes must be running: the six services plus the gateway.
+# But a client only ever needs to know one address - which is the whole
+# argument for having one.
+################################################################
+
+### 1. Sign in - routed to Identity on 7102
+POST {{Gateway}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "alice@commerceflow.local", "password": "Str0ngPass" }
+
+### 2. Admin
+POST {{Gateway}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "admin@commerceflow.local", "password": "Admin#12345" }
+
+@aliceToken = PASTE-ALICE-ACCESS-TOKEN-HERE
+@adminToken = PASTE-ADMIN-ACCESS-TOKEN-HERE
+
+### 3. Browse - routed to Catalog on 7101, anonymous
+GET {{Gateway}}/api/products?isActive=true
+
+@productId = PASTE-A-REAL-PRODUCT-ID-HERE
+
+### 4. Who am I - routed to Identity, token required
+GET {{Gateway}}/api/users/me
+Authorization: Bearer {{aliceToken}}
+
+################################################################
+# The gateway rejects anonymous traffic at the EDGE
+################################################################
+
+### 5. Basket with no token -> 401 FROM THE GATEWAY.
+###    Basket is never contacted. Watch its console: nothing appears.
+GET {{Gateway}}/api/basket
+
+### 6. With a token -> 200, routed to Basket on 7103
+GET {{Gateway}}/api/basket
+Authorization: Bearer {{aliceToken}}
+
+################################################################
+# THE POINT OF THIS PHASE - what the gateway refuses to know about
+################################################################
+
+### 7. Stock level -> 200. Matches /api/inventory/{productId:guid}
+GET {{Gateway}}/api/inventory/{{productId}}
+Authorization: Bearer {{aliceToken}}
+
+### 8. Stock adjustment -> 200. Matches /api/inventory/adjustments
+POST {{Gateway}}/api/inventory/adjustments
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "productId": "{{productId}}", "quantityChange": 15, "reason": "Phase 10 stock" }
+
+### 9. A RESERVATION -> 404. "reservations" is not a guid, so it matches
+###    neither inventory route, and there is no catch-all to fall through to.
+###    Inventory is never contacted.
+POST {{Gateway}}/api/inventory/reservations
+Content-Type: application/json
+Authorization: Bearer {{aliceToken}}
+
+{ "referenceId": "33333333-3333-3333-3333-333333333333", "lines": [ { "productId": "{{productId}}", "quantity": 1 } ] }
+
+### 10. A PAYMENT -> 404. There is no payment cluster in the routing table
+###     at all. This is the hole flagged in Phase 9 - "a customer who could
+###     reach POST /api/payments directly could pay one paisa for a laptop" -
+###     closed with no new code, just the absence of a route.
+POST {{Gateway}}/api/payments
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "orderId": "11111111-1111-1111-1111-111111111111",
+  "customerId": "22222222-2222-2222-2222-222222222222",
+  "amount": 0.01,
+  "paymentMethodToken": "tok_success"
+}
+
+### 11. BE HONEST ABOUT WHAT THIS DOES NOT DO.
+###     The same call straight to the service still returns 201, because on
+###     one laptop every port is reachable. The gateway removes the DOOR;
+###     the WALL is the network, and a developer machine has no network.
+###
+###     In production these services sit on a private subnet with no public
+###     address, and this request would not connect at all.
+POST https://localhost:7106/api/payments
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "orderId": "55555555-5555-5555-5555-555555555555",
+  "customerId": "22222222-2222-2222-2222-222222222222",
+  "amount": 0.01,
+  "paymentMethodToken": "tok_success"
+}
+
+################################################################
+# The full customer journey, one address
+################################################################
+
+### 12. Add to basket
+POST {{Gateway}}/api/basket/items
+Content-Type: application/json
+Authorization: Bearer {{aliceToken}}
+
+{ "productId": "{{productId}}", "quantity": 2 }
+
+### 13. Place the order (Ordering -> Basket -> Inventory, all behind the scenes)
+POST {{Gateway}}/api/orders
+Content-Type: application/json
+Authorization: Bearer {{aliceToken}}
+
+{ "shippingAddress": { "line1": "1 High Street", "city": "Bengaluru", "postalCode": "560001", "country": "India" } }
+
+@orderId = PASTE-THE-ORDER-ID-HERE
+
+### 14. Pay (Ordering -> Payment -> Inventory confirm)
+POST {{Gateway}}/api/orders/{{orderId}}/pay
+Content-Type: application/json
+Authorization: Bearer {{aliceToken}}
+
+{ "paymentMethodToken": "tok_success" }
+
+### 15. Order history
+GET {{Gateway}}/api/orders/my-orders
+Authorization: Bearer {{aliceToken}}
+
+################################################################
+# Rate limiting - one policy protecting six services
+################################################################
+
+### 16. Send this a dozen times quickly. The default is 100 per minute,
+###     so to see it work, restart the gateway with a smaller limit:
+###
+###       $env:RateLimiting__PermitLimit=5
+###       $env:RateLimiting__WindowSeconds=30
+###       dotnet run --project src/Gateway/CommerceFlow.ApiGateway
+###
+###     -> 429 with a Retry-After header once you cross it.
+GET {{Gateway}}/api/products
