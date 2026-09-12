@@ -10,8 +10,24 @@ namespace Payment.Api.Payments;
 /// the customer supplies only the payment method token, which travels through
 /// Ordering unchanged.
 /// </summary>
-public sealed class CreatePaymentRequest
+public sealed class CreatePaymentRequest : IValidatableObject
 {
+    /// <summary>
+    /// THE CALLER CHOOSES THE PAYMENT ID. This service does not mint one.
+    ///
+    /// Ordering writes this id onto its own order row and saves it BEFORE
+    /// calling us, so that an order stuck in PaymentProcessing carries the
+    /// exact id needed to ask "did that charge actually happen?" against
+    /// GET /api/payments/{id}. If we minted the id here, the answer would
+    /// arrive in a response - and the response is precisely what gets lost
+    /// in the failure this is meant to survive.
+    ///
+    /// That is the whole argument for a caller-chosen identifier: it is
+    /// known to the caller before the risky operation starts, so it is still
+    /// known afterwards regardless of what came back.
+    /// </summary>
+    public Guid PaymentId { get; init; }
+
     public Guid OrderId { get; init; }
 
     public Guid CustomerId { get; init; }
@@ -33,6 +49,27 @@ public sealed class CreatePaymentRequest
     [Required]
     [StringLength(100, MinimumLength = 3)]
     public string PaymentMethodToken { get; init; } = string.Empty;
+
+    /// <summary>
+    /// [Required] cannot express "not the default" for a Guid - a struct is
+    /// always present, so an omitted field arrives as Guid.Empty and passes.
+    /// IValidatableObject is the hook that turns that into a 400 naming the
+    /// field, rather than a 500 from the domain constructor further down.
+    /// </summary>
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        if (PaymentId == Guid.Empty)
+        {
+            yield return new ValidationResult(
+                "A payment id must be supplied by the caller.", [nameof(PaymentId)]);
+        }
+
+        if (OrderId == Guid.Empty)
+        {
+            yield return new ValidationResult(
+                "A payment must belong to an order.", [nameof(OrderId)]);
+        }
+    }
 }
 
 public sealed record PaymentResponse(

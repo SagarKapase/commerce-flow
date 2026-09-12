@@ -33,3 +33,31 @@ public sealed class UnknownPaymentMethodException : PaymentApplicationException
     private const string PaymentMethodTokenList =
         "tok_success, tok_declined, tok_insufficient_funds, tok_timeout";
 }
+
+/// <summary>
+/// Thrown when a caller reuses a payment id that already exists against a
+/// DIFFERENT order. Maps to 409 Conflict.
+///
+/// This is the one thing that can go wrong once the caller chooses the id, and
+/// it must never be answered by silently returning the existing payment: the
+/// caller would take "already charged" as meaning THEIR order is paid, when the
+/// money actually moved for somebody else's. Refusing loudly is the only safe
+/// answer, because the alternative marks an unpaid order as paid.
+/// </summary>
+public sealed class PaymentIdAlreadyUsedException : PaymentApplicationException
+{
+    public PaymentIdAlreadyUsedException(Guid paymentId, Guid existingOrderId, Guid requestedOrderId)
+        : base($"Payment '{paymentId}' already exists for order '{existingOrderId}' " +
+               $"and cannot be reused for order '{requestedOrderId}'.")
+    {
+        PaymentId = paymentId;
+        ExistingOrderId = existingOrderId;
+        RequestedOrderId = requestedOrderId;
+    }
+
+    public Guid PaymentId { get; }
+
+    public Guid ExistingOrderId { get; }
+
+    public Guid RequestedOrderId { get; }
+}

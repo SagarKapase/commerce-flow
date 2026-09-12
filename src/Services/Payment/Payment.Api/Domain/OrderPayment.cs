@@ -88,8 +88,18 @@ public sealed class OrderPayment
 
     public DateTime? CompletedAtUtc { get; private set; }
 
-    public static OrderPayment Create(Guid orderId, Guid customerId, decimal amount)
+    /// <summary>
+    /// The id is supplied by the CALLER, not generated here - see
+    /// CreatePaymentRequest.PaymentId for why. The mapping sets
+    /// ValueGeneratedNever() so EF does not try to fill it in either.
+    /// </summary>
+    public static OrderPayment Create(Guid id, Guid orderId, Guid customerId, decimal amount)
     {
+        if (id == Guid.Empty)
+        {
+            throw new ArgumentException("A payment must have an id.", nameof(id));
+        }
+
         if (orderId == Guid.Empty)
         {
             throw new ArgumentException("A payment must belong to an order.", nameof(orderId));
@@ -102,7 +112,7 @@ public sealed class OrderPayment
         }
 
         return new OrderPayment(
-            Guid.CreateVersion7(),
+            id,
             orderId,
             customerId,
             amount,

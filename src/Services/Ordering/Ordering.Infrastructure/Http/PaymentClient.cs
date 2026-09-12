@@ -7,6 +7,7 @@ using Ordering.Application.Exceptions;
 namespace Ordering.Infrastructure.Http;
 
 internal sealed record CreatePaymentPayload(
+    Guid PaymentId,
     Guid OrderId,
     Guid CustomerId,
     decimal Amount,
@@ -35,6 +36,7 @@ public sealed class PaymentClient : IPaymentClient
     }
 
     public async Task<PaymentResult> ChargeAsync(
+        Guid paymentId,
         Guid orderId,
         Guid customerId,
         decimal amount,
@@ -44,7 +46,12 @@ public sealed class PaymentClient : IPaymentClient
         // The amount comes from the ORDER, computed from the basket, priced by
         // Catalog. The customer never states it - they only supply the token
         // identifying the card, which passes through us untouched.
-        var payload = new CreatePaymentPayload(orderId, customerId, amount, paymentMethodToken);
+        // The payment id goes OUT with the request rather than coming back in
+        // the response. That is the whole point: we already saved it, so the
+        // order and the payment agree on the identifier even if this call's
+        // reply is lost.
+        var payload = new CreatePaymentPayload(
+            paymentId, orderId, customerId, amount, paymentMethodToken);
 
         try
         {

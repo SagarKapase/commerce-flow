@@ -30,6 +30,8 @@ internal sealed class GlobalExceptionHandler : IExceptionHandler
         {
             UnknownPaymentMethodException => (StatusCodes.Status400BadRequest, "Unknown payment method"),
 
+            PaymentIdAlreadyUsedException => (StatusCodes.Status409Conflict, "That payment id is already in use"),
+
             // Almost certainly the unique index on OrderId firing. PaymentService
             // checks for an existing payment first, so reaching here means two
             // requests raced through that check together - and the index caught

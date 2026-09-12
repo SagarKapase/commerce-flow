@@ -50,7 +50,17 @@ public interface IPaymentClient
     /// have charged the card and lost the response on the way back. Anything
     /// the caller does next has to be safe under that uncertainty.
     /// </exception>
+    /// <param name="paymentId">
+    /// The id WE choose for this payment, saved onto the order before this call
+    /// is made. Payment stores the row under exactly this id, which is what
+    /// makes the timeout above survivable: an order stuck in PaymentProcessing
+    /// still knows the id to ask GET /api/payments/{id} about, even though the
+    /// response that would have told us never arrived.
+    ///
+    /// Sending the same id again is a retry, not a second charge.
+    /// </param>
     Task<PaymentResult> ChargeAsync(
+        Guid paymentId,
         Guid orderId,
         Guid customerId,
         decimal amount,

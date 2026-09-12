@@ -322,11 +322,20 @@ public sealed class OrderService : IOrderService
         // InventoryReserved - so a retry would charge the card again.
         //
         // The payment id is not known yet, so we mint it here and pass the
-        // SAME id to Payment. That is deliberate: the caller choosing the id
-        // is what lets a retry be recognised as the same payment rather than a
-        // second one.
+        // SAME id to Payment. That is deliberate, for two reasons: the caller
+        // choosing the id is what lets a retry be recognised as the same
+        // payment rather than a second one, and it means this id is saved on
+        // the order BEFORE the risky call - so an order left in
+        // PaymentProcessing can be asked about with GET /api/payments/{id}
+        // even though the reply that would have carried the id never arrived.
+        //
+        // Saving an id that Payment then invents for itself would be worse
+        // than useless: it would look like a working reference and point at
+        // nothing.
         // -------------------------------------------------------------
-        order.StartPayment(Guid.CreateVersion7());
+        var paymentId = Guid.CreateVersion7();
+
+        order.StartPayment(paymentId);
         await _orders.SaveChangesAsync(cancellationToken);
 
         _logger.LogInformation(
@@ -344,6 +353,7 @@ public sealed class OrderService : IOrderService
         // Phase 13.
         // -------------------------------------------------------------
         var payment = await _paymentClient.ChargeAsync(
+            paymentId,
             order.Id,
             order.CustomerId,
             order.TotalAmount,

@@ -34,54 +34,8 @@
       },
       {
         "Path": "src\\Services\\Notification\\Notification.Worker\\Notification.Worker.csproj",
-        "Action": "Start",
-        "DebugTarget": ""
+        "Action": "Start"
       },
-      {
-        "Path": "src\\Gateway\\CommerceFlow.ApiGateway\\CommerceFlow.ApiGateway.csproj",
-        "Action": "Start",
-        "DebugTarget": "https"
-      }
-    ]
-  },
-  {
-    "Name": "Order flow only",
-    "Projects": [
-      {
-        "Path": "src\\Services\\Identity\\Identity.Api\\Identity.Api.csproj",
-        "Action": "Start",
-        "DebugTarget": "https-quiet"
-      },
-      {
-        "Path": "src\\Services\\Catalog\\Catalog.Api\\Catalog.Api.csproj",
-        "Action": "Start",
-        "DebugTarget": "https-quiet"
-      },
-      {
-        "Path": "src\\Services\\Basket\\Basket.Api\\Basket.Api.csproj",
-        "Action": "Start",
-        "DebugTarget": "https-quiet"
-      },
-      {
-        "Path": "src\\Services\\Inventory\\Inventory.Api\\Inventory.Api.csproj",
-        "Action": "Start",
-        "DebugTarget": "https-quiet"
-      },
-      {
-        "Path": "src\\Services\\Ordering\\Ordering.Api\\Ordering.Api.csproj",
-        "Action": "Start",
-        "DebugTarget": "https-quiet"
-      },
-      {
-        "Path": "src\\Services\\Payment\\Payment.Api\\Payment.Api.csproj",
-        "Action": "Start",
-        "DebugTarget": "https-quiet"
-      }
-    ]
-  },
-  {
-    "Name": "Gateway and UI only",
-    "Projects": [
       {
         "Path": "src\\Gateway\\CommerceFlow.ApiGateway\\CommerceFlow.ApiGateway.csproj",
         "Action": "Start",

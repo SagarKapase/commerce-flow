@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Payment.Api.Domain;
+using Payment.Api.Exceptions;
 using Payment.Api.Gateway;
 using Payment.Api.Persistence;
 
@@ -48,12 +49,49 @@ public sealed class PaymentService : IPaymentService
         CancellationToken cancellationToken)
     {
         // --------------------------------------------------------------
-        // STEP 1. HAVE WE ALREADY CHARGED THIS ORDER?
+        // STEP 1a. HAVE WE ALREADY SEEN THIS PAYMENT ID?
         //
-        // This is idempotency by NATURAL KEY, and it is the simplest form
-        // there is: the operation already has a unique identifier that means
-        // something in the business - the order id - so there is nothing to
-        // invent.
+        // The caller chose the id, which makes it an idempotency key: the
+        // SAME request sent twice is recognisable as one operation. This is
+        // the check that makes Ordering's retry after a lost response safe,
+        // because Ordering still has the id it saved before it called us.
+        //
+        // If the id exists but names a different order, that is not a retry -
+        // it is a caller bug, and returning the existing payment would report
+        // somebody else's charge as this order's. Refuse instead.
+        // --------------------------------------------------------------
+        var sameId = await _dbContext.Payments
+            .FirstOrDefaultAsync(payment => payment.Id == request.PaymentId, cancellationToken);
+
+        if (sameId is not null)
+        {
+            if (sameId.OrderId != request.OrderId)
+            {
+                throw new PaymentIdAlreadyUsedException(
+                    request.PaymentId, sameId.OrderId, request.OrderId);
+            }
+
+            _logger.LogInformation(
+                "Payment {PaymentId} already exists with status {Status} - returning it unchanged",
+                sameId.Id,
+                sameId.Status);
+
+            return ToResponse(sameId);
+        }
+
+        // --------------------------------------------------------------
+        // STEP 1b. HAVE WE ALREADY CHARGED THIS ORDER, UNDER ANOTHER ID?
+        //
+        // This is idempotency by NATURAL KEY: the operation already has a
+        // unique identifier that means something in the business - the order
+        // id - so there is nothing to invent.
+        //
+        // Both checks are here because they answer different questions. 1a
+        // catches "this exact request again"; 1b catches "a DIFFERENT attempt
+        // to charge an order that is already charged", which is the case the
+        // caller-chosen id cannot see. Keeping only 1a would let a fresh
+        // attempt double-charge; keeping only 1b is what this service had
+        // before, and it left Ordering unable to look its own payment up.
         //
         // Returning the existing payment rather than an error is deliberate.
         // The caller asked "charge this order"; the order is charged; that is
@@ -62,8 +100,7 @@ public sealed class PaymentService : IPaymentService
         // is precisely backwards.
         //
         // Phase 13 will do the general case - an Idempotency-Key header for
-        // operations with no natural key - but note that this version is
-        // BETTER when it applies, because it cannot be forgotten by a client.
+        // operations with no natural key at all.
         // --------------------------------------------------------------
         var existing = await _dbContext.Payments
             .FirstOrDefaultAsync(payment => payment.OrderId == request.OrderId, cancellationToken);
@@ -92,7 +129,8 @@ public sealed class PaymentService : IPaymentService
         // real money and leave no trace of it whatsoever. In a payment system
         // that is not an edge case, it is the thing you get audited for.
         // --------------------------------------------------------------
-        var payment = OrderPayment.Create(request.OrderId, request.CustomerId, request.Amount);
+        var payment = OrderPayment.Create(
+            request.PaymentId, request.OrderId, request.CustomerId, request.Amount);
 
         _dbContext.Payments.Add(payment);
         await _dbContext.SaveChangesAsync(cancellationToken);
