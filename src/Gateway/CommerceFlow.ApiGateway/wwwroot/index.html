@@ -52,26 +52,45 @@
   <div class="columns">
     <section class="content">
 
-      <!-- ============================ AUTH ============================ -->
-      <div class="panel" id="panel-auth">
-        <h2>Sign in</h2>
-        <p class="hint">
-          Seeded administrator: <code>admin@commerceflow.local</code> / <code>Admin#12345</code>.
-          Or register a customer &mdash; new accounts always get the <code>Customer</code> role,
-          never <code>Admin</code>.
-        </p>
-        <div class="row">
-          <label>Email <input id="authEmail" type="email" value="alice@commerceflow.local"></label>
-          <label>Password <input id="authPassword" type="password" value="Str0ngPass"></label>
-          <label>Full name <input id="authName" type="text" value="Alice" placeholder="register only"></label>
+      <!-- =================== ACCOUNT (signed in only) =================== -->
+      <div class="panel" id="panel-account" hidden>
+        <h2>Your account</h2>
+        <div class="account">
+          <div class="who-box">
+            <div class="avatar" id="acctInitial">?</div>
+            <div>
+              <div class="acct-name" id="acctName"></div>
+              <div class="muted" id="acctEmail"></div>
+              <div id="acctRoles" class="role-list"></div>
+            </div>
+          </div>
+          <div class="token-box">
+            <div class="muted small">Access token expires in</div>
+            <div class="countdown" id="acctExpiry">&mdash;</div>
+            <p class="hint small" style="margin:6px 0 0">
+              15 minutes, and it cannot be revoked &mdash; a JWT is validated offline by
+              every service. The refresh token is what actually ends a session.
+            </p>
+          </div>
         </div>
         <div class="actions">
-          <button class="primary" data-call="login">POST /api/auth/login</button>
-          <button data-call="register">POST /api/auth/register</button>
-          <button data-call="refresh">POST /api/auth/refresh</button>
-          <button data-call="me">GET /api/users/me</button>
+          <button data-call="refresh">Refresh session <span class="mono">POST /api/auth/refresh</span></button>
+          <button data-call="me">Who am I <span class="mono">GET /api/users/me</span></button>
         </div>
         <pre class="out" id="authOut"></pre>
+      </div>
+
+      <!-- =================== SIGNED OUT PROMPT =================== -->
+      <div class="panel signed-out" id="panel-signedout">
+        <h2>Welcome to CommerceFlow</h2>
+        <p class="hint">
+          Browse the catalog below without an account &mdash; product listings are public.
+          Sign in to use a basket and place orders.
+        </p>
+        <div class="actions">
+          <button class="primary" data-call="openSignIn">Sign in</button>
+          <button data-call="openRegister">Create an account</button>
+        </div>
       </div>
 
       <!-- ============================ SHOP ============================ -->
@@ -253,6 +272,95 @@
     </aside>
   </div>
 </main>
+
+<!-- ==================================================================
+     AUTH DIALOG
+
+     A native <dialog>. showModal() gives a focus trap, a backdrop and
+     Escape-to-close with no JavaScript and no library - all of which you
+     would otherwise write badly by hand.
+     ================================================================== -->
+<dialog id="authDialog" class="auth-dialog">
+  <form method="dialog" class="dialog-close"><button aria-label="Close">&times;</button></form>
+
+  <div class="auth-head">
+    <span class="logo">CF</span>
+    <div>
+      <strong id="authTitle">Sign in</strong>
+      <div class="muted small" id="authSubtitle">Welcome back</div>
+    </div>
+  </div>
+
+  <div class="auth-switch">
+    <button class="auth-tab active" data-authmode="signin">Sign in</button>
+    <button class="auth-tab" data-authmode="register">Create account</button>
+  </div>
+
+  <!-- ---------------- SIGN IN ---------------- -->
+  <form id="signinForm" class="auth-form" novalidate>
+    <label class="wide">Email
+      <input id="siEmail" type="email" autocomplete="username" required
+             placeholder="you@example.com" value="admin@commerceflow.local">
+    </label>
+    <label class="wide">Password
+      <input id="siPassword" type="password" autocomplete="current-password" required
+             placeholder="Your password" value="Admin#12345">
+    </label>
+
+    <div class="form-error" id="siError" hidden></div>
+
+    <button class="primary wide-btn" type="submit" id="siSubmit">Sign in</button>
+
+    <div class="demo-accounts">
+      <div class="muted small">Demo accounts &mdash; click to fill</div>
+      <button type="button" class="chip" data-fill="admin@commerceflow.local|Admin#12345">
+        admin@commerceflow.local <span class="role-chip admin">Admin</span>
+      </button>
+      <button type="button" class="chip" data-fill="alice@commerceflow.local|Str0ngPass">
+        alice@commerceflow.local <span class="role-chip">Customer</span>
+      </button>
+      <div class="muted small">
+        Only the admin is seeded. Use <strong>Create account</strong> for a customer.
+      </div>
+    </div>
+
+    <p class="hint small dialog-note">
+      Wrong password and unknown email return the <strong>identical</strong> response.
+      Telling them apart would let somebody discover which addresses have accounts
+      without guessing a single password.
+    </p>
+  </form>
+
+  <!-- ---------------- REGISTER ---------------- -->
+  <form id="registerForm" class="auth-form" hidden novalidate>
+    <label class="wide">Full name
+      <input id="rgName" type="text" autocomplete="name" required placeholder="Alice Kumar">
+    </label>
+    <label class="wide">Email
+      <input id="rgEmail" type="email" autocomplete="username" required placeholder="you@example.com">
+    </label>
+    <label class="wide">Password
+      <input id="rgPassword" type="password" autocomplete="new-password" required placeholder="At least 8 characters">
+    </label>
+
+    <ul class="policy" id="rgPolicy">
+      <li data-rule="length">At least 8 characters</li>
+      <li data-rule="upper">One uppercase letter</li>
+      <li data-rule="lower">One lowercase letter</li>
+      <li data-rule="digit">One digit</li>
+    </ul>
+
+    <div class="form-error" id="rgError" hidden></div>
+
+    <button class="primary wide-btn" type="submit" id="rgSubmit">Create account</button>
+
+    <p class="hint small dialog-note">
+      New accounts always get the <strong>Customer</strong> role. There is no field here
+      that could ask for <strong>Admin</strong> &mdash; an endpoint that lets a caller choose
+      their own role is a privilege-escalation hole.
+    </p>
+  </form>
+</dialog>
 
 <div id="toast" class="toast" hidden></div>
 

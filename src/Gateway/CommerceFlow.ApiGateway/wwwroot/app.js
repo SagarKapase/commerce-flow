@@ -172,10 +172,17 @@ function paintSession() {
   const el = document.getElementById('session');
   const user = store.user;
 
+  // These two panels are SIBLINGS of panel-shop, not children, so hiding the
+  // Shop tab does not hide them - they have to be told about the active tab.
+  const onShop = document.getElementById('panel-shop')?.hidden === false;
+  document.getElementById('panel-account').hidden = !onShop || !user;
+  document.getElementById('panel-signedout').hidden = !onShop || !!user;
+
   if (!user) {
-    el.innerHTML = `<span class="anon">not signed in</span>`;
+    el.innerHTML = `<button class="signin" data-call="openSignIn">Sign in</button>`;
     document.getElementById('adminTab').hidden = true;
     document.getElementById('basketCount').textContent = '0';
+    stopCountdown();
     return;
   }
 
@@ -184,11 +191,114 @@ function paintSession() {
     ${(user.roles || []).map(r => `<span class="roles">${escapeHtml(r)}</span>`).join('')}
     <button class="link" data-call="logout">sign out</button>`;
 
+  document.getElementById('acctInitial').textContent = (user.name || user.email || '?').trim().charAt(0).toUpperCase();
+  document.getElementById('acctName').textContent = user.name || '(no name)';
+  document.getElementById('acctEmail').textContent = user.email;
+  document.getElementById('acctRoles').innerHTML = (user.roles || [])
+    .map(r => `<span class="role-chip ${r === 'Admin' ? 'admin' : ''}">${escapeHtml(r)}</span>`).join('');
+
   // The Admin tab is HIDDEN, not protected. Hiding a button is a convenience
   // for the person using the page, never a security control - every admin
   // endpoint is enforced server-side by [Authorize(Roles = "Admin")], and a
   // customer who unhides this tab in dev tools gets 403s, not access.
   document.getElementById('adminTab').hidden = !isAdmin();
+
+  startCountdown();
+}
+
+/* --------------------------------------------------------------------------
+   ACCESS TOKEN COUNTDOWN
+
+   Reads "exp" straight out of the JWT payload. Worth noticing that the browser
+   can do this AT ALL: a JWT is base64url-encoded, NOT encrypted, so anyone
+   holding one can read every claim in it. That is why a token never carries a
+   secret - the signature stops it being ALTERED, it does not hide anything.
+   -------------------------------------------------------------------------- */
+let countdownTimer = null;
+
+function decodeJwt(token) {
+  try {
+    const payload = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    return JSON.parse(atob(payload.padEnd(payload.length + (4 - payload.length % 4) % 4, '=')));
+  } catch { return null; }
+}
+
+function startCountdown() {
+  stopCountdown();
+  const el = document.getElementById('acctExpiry');
+  const claims = decodeJwt(store.access || '');
+  if (!claims?.exp) { el.textContent = '—'; return; }
+
+  const tick = () => {
+    const secondsLeft = claims.exp - Math.floor(Date.now() / 1000);
+    if (secondsLeft <= 0) {
+      el.textContent = 'expired';
+      el.classList.add('low');
+      return;
+    }
+    const m = Math.floor(secondsLeft / 60), s = secondsLeft % 60;
+    el.textContent = `${m}:${String(s).padStart(2, '0')}`;
+    el.classList.toggle('low', secondsLeft < 60);
+  };
+  tick();
+  countdownTimer = setInterval(tick, 1000);
+}
+
+function stopCountdown() {
+  if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
+}
+
+/* ==========================================================================
+   AUTH DIALOG
+   ========================================================================== */
+const dialog = () => document.getElementById('authDialog');
+
+function openAuth(mode) {
+  setAuthMode(mode);
+  clearFormError('siError');
+  clearFormError('rgError');
+  const d = dialog();
+  if (!d.open) d.showModal();
+  setTimeout(() => document.getElementById(mode === 'register' ? 'rgName' : 'siEmail')?.focus(), 40);
+}
+
+function setAuthMode(mode) {
+  document.querySelectorAll('.auth-tab').forEach(t =>
+    t.classList.toggle('active', t.dataset.authmode === mode));
+  document.getElementById('signinForm').hidden = mode !== 'signin';
+  document.getElementById('registerForm').hidden = mode !== 'register';
+  document.getElementById('authTitle').textContent = mode === 'register' ? 'Create account' : 'Sign in';
+  document.getElementById('authSubtitle').textContent =
+    mode === 'register' ? 'New accounts get the Customer role' : 'Welcome back';
+}
+
+function showFormError(id, message, list) {
+  const el = document.getElementById(id);
+  el.innerHTML = escapeHtml(message) +
+    (list?.length ? `<ul>${list.map(x => `<li>${escapeHtml(x)}</li>`).join('')}</ul>` : '');
+  el.hidden = false;
+}
+
+function clearFormError(id) {
+  const el = document.getElementById(id);
+  el.hidden = true;
+  el.textContent = '';
+}
+
+/* The password rules mirror what Identity is configured with in Program.cs.
+   This is a CONVENIENCE, not the check - the server rejects a weak password
+   whatever the browser thinks, and its 400 response lists exactly which rules
+   failed. Duplicating the rules here just saves a round trip. */
+function checkPolicy(password) {
+  const rules = {
+    length: password.length >= 8,
+    upper: /[A-Z]/.test(password),
+    lower: /[a-z]/.test(password),
+    digit: /[0-9]/.test(password)
+  };
+  document.querySelectorAll('#rgPolicy li').forEach(li =>
+    li.classList.toggle('ok', rules[li.dataset.rule]));
+  return Object.values(rules).every(Boolean);
 }
 
 /* ==========================================================================
@@ -197,29 +307,15 @@ function paintSession() {
 const actions = {
 
   /* ---------------- auth ---------------- */
-  async login() {
-    const session = await api('POST', '/api/auth/login', {
-      email: val('authEmail'), password: val('authPassword')
-    }, { anonymous: true });
-    store.set(session);
-    paintSession();
-    show('authOut', session);
-    toast(`Signed in as ${session.email}`);
-    await actions.products();
-    await actions.basket().catch(() => {});
-  },
-
-  async register() {
-    const created = await api('POST', '/api/auth/register', {
-      email: val('authEmail'), password: val('authPassword'), fullName: val('authName')
-    }, { anonymous: true });
-    show('authOut', created);
-    toast('Registered. Now sign in.');
-  },
+  openSignIn() { openAuth('signin'); },
+  openRegister() { openAuth('register'); },
 
   async refresh() {
     const ok = await tryRefresh();
-    show('authOut', ok ? { refreshed: true, note: 'new access AND refresh token issued - the old refresh token is now dead' } : { refreshed: false });
+    show('authOut', ok
+      ? { refreshed: true, note: 'A NEW refresh token was issued and the old one is now dead. Send the old one again and every session for this user is revoked - that is reuse detection.' }
+      : { refreshed: false });
+    if (ok) toast('Session refreshed');
   },
 
   async me() { show('authOut', await api('GET', '/api/users/me')); },
@@ -230,7 +326,10 @@ const actions = {
     paintSession();
     document.getElementById('basketLines').innerHTML = '';
     document.getElementById('checkoutBox').hidden = true;
-    toast('Signed out. Note the ACCESS token stays valid until it expires - logout revokes the refresh token.');
+    document.getElementById('orderList').innerHTML = '';
+    document.getElementById('authOut').textContent = '';
+    switchTab('shop');
+    toast('Signed out. The ACCESS token stays valid until it expires - logout revokes the REFRESH token.');
   },
 
   /* ---------------- catalog ---------------- */
@@ -558,13 +657,27 @@ const val = id => document.getElementById(id)?.value.trim() ?? '';
 const show = (id, data) => { document.getElementById(id).textContent = JSON.stringify(data, null, 2); };
 
 function switchTab(name) {
+  // Basket and Orders are meaningless without a session, so asking for one is
+  // friendlier than showing an empty page and a 401 in the log. The SERVER
+  // still refuses either way - this only saves the round trip.
+  if ((name === 'basket' || name === 'orders') && !store.access) {
+    toast('Sign in to use a basket and place orders');
+    openAuth('signin');
+    return;
+  }
+
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.panel === name));
   ['shop', 'basket', 'orders', 'admin', 'endpoints'].forEach(p => {
-    document.getElementById(`panel-${p}`).hidden = p !== name;
+    document.getElementById('panel-' + p).hidden = p !== name;
   });
-  // The sign-in panel stays visible on the Shop tab, because signing in is
-  // the first thing anybody needs to do.
-  document.getElementById('panel-auth').hidden = name !== 'shop';
+
+  // The account / signed-out panels belong to the Shop tab.
+  const onShop = name === 'shop';
+  document.getElementById('panel-account').hidden = !onShop || !store.user;
+  document.getElementById('panel-signedout').hidden = !onShop || !!store.user;
+
+  if (name === 'basket') actions.basket().catch(() => {});
+  if (name === 'orders') actions.myOrders().catch(() => {});
 }
 
 // One listener for the whole page. Every button carries a data-* attribute
@@ -597,6 +710,103 @@ document.addEventListener('change', async event => {
   if (!productId) return;
   try { await actions.setQuantity(productId, event.target.value); }
   catch (error) { toast(error.message, true); await actions.basket(); }
+});
+
+/* ==========================================================================
+   DIALOG WIRING
+   ========================================================================== */
+
+document.addEventListener('click', event => {
+  const tab = event.target.closest('.auth-tab');
+  if (tab) { event.preventDefault(); setAuthMode(tab.dataset.authmode); }
+
+  const chip = event.target.closest('[data-fill]');
+  if (chip) {
+    const [email, password] = chip.dataset.fill.split('|');
+    document.getElementById('siEmail').value = email;
+    document.getElementById('siPassword').value = password;
+    clearFormError('siError');
+  }
+});
+
+// Live password policy feedback while registering.
+document.getElementById('rgPassword').addEventListener('input', e => checkPolicy(e.target.value));
+
+/* ---------------- sign in ---------------- */
+document.getElementById('signinForm').addEventListener('submit', async event => {
+  event.preventDefault();
+  clearFormError('siError');
+
+  const button = document.getElementById('siSubmit');
+  button.disabled = true;
+  button.textContent = 'Signing in...';
+
+  try {
+    const session = await api('POST', '/api/auth/login', {
+      email: val('siEmail'), password: val('siPassword')
+    }, { anonymous: true });
+
+    store.set(session);
+    paintSession();
+    dialog().close();
+    toast('Signed in as ' + session.email);
+
+    await actions.products(1);
+    await actions.basket().catch(() => {});
+  } catch (error) {
+    // 401 here is deliberately vague - "Invalid email or password" for BOTH a
+    // wrong password and an unknown address. Anything more specific would let
+    // somebody enumerate which addresses have accounts.
+    showFormError('siError', error.message || 'Could not sign in');
+  } finally {
+    button.disabled = false;
+    button.textContent = 'Sign in';
+  }
+});
+
+/* ---------------- register ---------------- */
+document.getElementById('registerForm').addEventListener('submit', async event => {
+  event.preventDefault();
+  clearFormError('rgError');
+
+  const email = val('rgEmail'), password = val('rgPassword'), name = val('rgName');
+
+  if (!name || !email || !password) {
+    return showFormError('rgError', 'Please fill in every field.');
+  }
+  if (!checkPolicy(password)) {
+    return showFormError('rgError', 'That password does not meet the requirements above.');
+  }
+
+  const button = document.getElementById('rgSubmit');
+  button.disabled = true;
+  button.textContent = 'Creating account...';
+
+  try {
+    // Registration returns 201 with the new user and NO tokens - creating an
+    // account and signing in are separate operations, deliberately. So we sign
+    // in straight afterwards, which is a UI convenience rather than something
+    // the API does for us.
+    await api('POST', '/api/auth/register',
+      { email, password, fullName: name }, { anonymous: true });
+
+    const session = await api('POST', '/api/auth/login',
+      { email, password }, { anonymous: true });
+
+    store.set(session);
+    paintSession();
+    dialog().close();
+    toast('Welcome, ' + session.fullName + '. You have the Customer role.');
+    await actions.products(1);
+  } catch (error) {
+    // api() has already flattened an Identity ProblemDetails - including the
+    // LIST of password rules that failed - into error.message, so every broken
+    // rule is shown at once rather than one attempt at a time.
+    showFormError('rgError', error.message || 'Could not create the account');
+  } finally {
+    button.disabled = false;
+    button.textContent = 'Create account';
+  }
 });
 
 /* ---------------- start ---------------- */
