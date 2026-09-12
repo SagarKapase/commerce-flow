@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CommerceFlow</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!--
+  ==================================================================
+  SERVED BY THE GATEWAY, ON PURPOSE.
+
+  This page lives in the API Gateway's wwwroot, so the browser loads it
+  from https://localhost:7100 and every fetch() below goes to
+  https://localhost:7100/api/... - the SAME ORIGIN.
+
+  That means no CORS configuration anywhere in the system. Not one
+  AddCors(), not one policy, not one preflight request. If the page were
+  served from somewhere else it would need every service to allow its
+  origin, and every service would need updating when that origin changed.
+
+  It is also the clearest demonstration of what the gateway is for: the
+  browser knows ONE address, and six services sit behind it.
+  ==================================================================
+-->
+
+<header class="topbar">
+  <div class="brand">
+    <span class="logo">CF</span>
+    <div>
+      <strong>CommerceFlow</strong>
+      <span class="sub">6 services &middot; 1 gateway &middot; port 7100</span>
+    </div>
+  </div>
+
+  <div class="session" id="session">
+    <span class="anon">not signed in</span>
+  </div>
+</header>
+
+<nav class="tabs" id="tabs">
+  <button class="tab active" data-panel="shop">Shop</button>
+  <button class="tab" data-panel="basket">Basket <span class="pill" id="basketCount">0</span></button>
+  <button class="tab" data-panel="orders">Orders</button>
+  <button class="tab" data-panel="admin" hidden id="adminTab">Admin</button>
+  <button class="tab" data-panel="endpoints">Endpoint map</button>
+</nav>
+
+<main>
+  <div class="columns">
+    <section class="content">
+
+      <!-- ============================ AUTH ============================ -->
+      <div class="panel" id="panel-auth">
+        <h2>Sign in</h2>
+        <p class="hint">
+          Seeded administrator: <code>admin@commerceflow.local</code> / <code>Admin#12345</code>.
+          Or register a customer &mdash; new accounts always get the <code>Customer</code> role,
+          never <code>Admin</code>.
+        </p>
+        <div class="row">
+          <label>Email <input id="authEmail" type="email" value="alice@commerceflow.local"></label>
+          <label>Password <input id="authPassword" type="password" value="Str0ngPass"></label>
+          <label>Full name <input id="authName" type="text" value="Alice" placeholder="register only"></label>
+        </div>
+        <div class="actions">
+          <button class="primary" data-call="login">POST /api/auth/login</button>
+          <button data-call="register">POST /api/auth/register</button>
+          <button data-call="refresh">POST /api/auth/refresh</button>
+          <button data-call="me">GET /api/users/me</button>
+        </div>
+        <pre class="out" id="authOut"></pre>
+      </div>
+
+      <!-- ============================ SHOP ============================ -->
+      <div class="panel" id="panel-shop">
+        <h2>Catalog <span class="tag anon-ok">anonymous</span></h2>
+        <p class="hint">
+          <code>GET /api/products</code> needs no token &mdash; reads are public.
+          Writing one needs the <code>Admin</code> role, which is why the gateway
+          passes this route through without an authorization check: the same path
+          is public for GET and restricted for POST, and only Catalog knows that.
+        </p>
+
+        <div class="row filters">
+          <label>Search <input id="fSearch" placeholder="keyboard"></label>
+          <label>Category
+            <select id="fCategory"><option value="">any</option></select>
+          </label>
+          <label>Min price <input id="fMin" type="number" step="0.01" placeholder="0"></label>
+          <label>Max price <input id="fMax" type="number" step="0.01" placeholder="99999"></label>
+          <label>Active
+            <select id="fActive"><option value="">any</option><option value="true">true</option><option value="false">false</option></select>
+          </label>
+          <label>Page size <input id="fSize" type="number" value="12" min="1" max="100"></label>
+        </div>
+        <div class="actions">
+          <button class="primary" data-call="products">Apply filters</button>
+          <button data-call="productsReset">Reset</button>
+        </div>
+
+        <div id="productGrid" class="grid"></div>
+        <div class="pager" id="pager"></div>
+      </div>
+
+      <!-- ============================ BASKET ============================ -->
+      <div class="panel" id="panel-basket">
+        <h2>Basket <span class="tag auth">token required</span></h2>
+        <p class="hint">
+          The basket owner comes from the token's <code>sub</code> claim. There is no
+          user id in any URL here &mdash; sign in as somebody else and this list changes
+          entirely, using the exact same endpoint.
+        </p>
+        <div class="actions">
+          <button data-call="basket">GET /api/basket</button>
+          <button class="danger" data-call="basketClear">DELETE /api/basket</button>
+        </div>
+        <div id="basketLines"></div>
+
+        <div class="checkout" id="checkoutBox" hidden>
+          <h3>Checkout</h3>
+          <p class="hint">
+            <code>POST /api/orders</code> sends <strong>only the shipping address</strong>.
+            The items and prices come from the basket, server-side &mdash; there is no field
+            in this request that could name a product or a price.
+          </p>
+          <div class="row">
+            <label>Address <input id="addr1" value="1 High Street"></label>
+            <label>City <input id="addrCity" value="Bengaluru"></label>
+            <label>Postcode <input id="addrPost" value="560001"></label>
+            <label>Country <input id="addrCountry" value="India"></label>
+          </div>
+          <button class="primary" data-call="placeOrder">Place order</button>
+        </div>
+      </div>
+
+      <!-- ============================ ORDERS ============================ -->
+      <div class="panel" id="panel-orders">
+        <h2>Orders <span class="tag auth">token required</span></h2>
+        <p class="hint">
+          There is no <code>PUT /api/orders/{id}</code> anywhere in this system. An order is a
+          record of a commitment, not an editable document, so the only things you can do to
+          one are business operations: <code>/pay</code> and <code>/cancel</code>.
+        </p>
+        <div class="actions">
+          <button class="primary" data-call="myOrders">GET /api/orders/my-orders</button>
+        </div>
+        <div id="orderList"></div>
+      </div>
+
+      <!-- ============================ ADMIN ============================ -->
+      <div class="panel" id="panel-admin">
+        <h2>Administration <span class="tag admin">Admin role</span></h2>
+
+        <div class="card">
+          <h3>Stock <span class="mono">POST /api/inventory/adjustments</span></h3>
+          <p class="hint">
+            Positive receives stock, negative writes it off. An adjustment can never
+            take units that are already reserved for somebody's order.
+          </p>
+          <div class="row">
+            <label>Product
+              <select id="adjProduct"></select>
+            </label>
+            <label>Change <input id="adjQty" type="number" value="10"></label>
+            <label>Reason <input id="adjReason" value="Delivery received"></label>
+          </div>
+          <div class="actions">
+            <button class="primary" data-call="adjust">Adjust stock</button>
+            <button data-call="stockLevel">GET /api/inventory/{productId}</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>New category <span class="mono">POST /api/categories</span></h3>
+          <div class="row">
+            <label>Name <input id="catName" placeholder="Keyboards"></label>
+            <label>Slug <input id="catSlug" placeholder="keyboards"></label>
+          </div>
+          <button class="primary" data-call="createCategory">Create category</button>
+        </div>
+
+        <div class="card">
+          <h3>New product <span class="mono">POST /api/products</span></h3>
+          <div class="row">
+            <label>Name <input id="pName" placeholder="Mechanical Keyboard"></label>
+            <label>SKU <input id="pSku" placeholder="KEY-001"></label>
+            <label>Price <input id="pPrice" type="number" step="0.01" value="8999.00"></label>
+            <label>Category <select id="pCategory"></select></label>
+          </div>
+          <label class="wide">Description <input id="pDesc" placeholder="Wireless mechanical keyboard"></label>
+          <button class="primary" data-call="createProduct">Create product</button>
+        </div>
+
+        <div class="card">
+          <h3>All orders <span class="mono">GET /api/orders</span></h3>
+          <p class="hint">
+            Admin-only, and here a <em>role</em> is the right mechanism. Reading a single
+            order uses <em>ownership</em> instead. Two different questions, two different checks.
+          </p>
+          <div class="row">
+            <label>Status
+              <select id="oStatus">
+                <option value="">any</option>
+                <option>Pending</option><option>InventoryReserved</option>
+                <option>PaymentProcessing</option><option>Confirmed</option>
+                <option>PaymentFailed</option><option>Cancelled</option><option>Rejected</option>
+              </select>
+            </label>
+          </div>
+          <button class="primary" data-call="allOrders">Load all orders</button>
+          <div id="allOrderList"></div>
+        </div>
+      </div>
+
+      <!-- ============================ ENDPOINT MAP ============================ -->
+      <div class="panel" id="panel-endpoints">
+        <h2>Endpoint map</h2>
+        <p class="hint">
+          Every endpoint this UI can reach, and the service behind it. The browser only
+          ever addresses <code>https://localhost:7100</code>.
+        </p>
+        <div class="tablewrap"><table class="map" id="endpointTable"></table></div>
+
+        <h3>Deliberately unreachable</h3>
+        <p class="hint">
+          These exist on their services but have <strong>no route in the gateway</strong>,
+          so the browser gets a 404 without the service ever being contacted. That is how
+          internal APIs are kept internal &mdash; not with a permission check somebody can
+          forget, but by removing the address.
+        </p>
+        <div class="tablewrap"><table class="map blocked" id="blockedTable"></table></div>
+        <div class="actions">
+          <button data-call="proveBlocked">Prove it &mdash; try them and watch the 404s</button>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ============================ REQUEST LOG ============================ -->
+    <aside class="log">
+      <div class="log-head">
+        <strong>Request log</strong>
+        <button class="link" data-call="clearLog">clear</button>
+      </div>
+      <p class="hint small">
+        Every call this page makes. Click one to see what went over the wire &mdash; the
+        point of the whole page is that you can tell exactly which endpoint each button hits.
+      </p>
+      <div id="logList"></div>
+    </aside>
+  </div>
+</main>
+
+<div id="toast" class="toast" hidden></div>
+
+<script src="app.js"></script>
+</body>
+</html>

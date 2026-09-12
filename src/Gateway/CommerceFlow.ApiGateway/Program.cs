@@ -148,6 +148,27 @@ var app = builder.Build();
 
 app.UseHttpsRedirection();
 
+// ---------------------------------------------------------------------
+// The UI, served from wwwroot.
+//
+// WHY THE GATEWAY SERVES IT: the browser then loads the page from
+// https://localhost:7100 and calls https://localhost:7100/api/... - the
+// SAME ORIGIN. That means no CORS anywhere in the system: not one
+// AddCors(), not one policy, not one preflight.
+//
+// Serve the page from anywhere else and every service would need to allow
+// that origin, and every service would need changing when it moved. Six
+// CORS policies to keep in step, or one static file. This is a real and
+// underrated reason gateways exist.
+//
+// BEFORE the authentication and rate-limiting middleware, deliberately:
+// the page and its CSS must load for somebody who is not signed in (they
+// have to reach the sign-in form), and a page load pulling three files
+// should not spend three of the caller's rate-limit allowance.
+// ---------------------------------------------------------------------
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
 // Authentication first, so the rate limiter can partition by user rather
 // than by address.
 //

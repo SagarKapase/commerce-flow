@@ -283,6 +283,24 @@ completes while the caller times out, leaving Payment `Succeeded`, the order
 `PaymentProcessing` and the stock still held. Nothing detects it. That is what
 Phase 12's saga and Phase 14's idempotency are for.
 
+## The UI
+
+Open **<https://localhost:7100>** with all six services and the gateway running.
+
+The page is static HTML/CSS/JS in the gateway's `wwwroot` — no framework, no npm,
+no build step. It is served from the **same origin** as the API, which is why
+there is not one line of CORS configuration anywhere in the solution.
+
+Covers every endpoint the gateway routes: sign in/register/refresh, browse with
+search + filters + paging, basket, checkout, pay with the four test tokens,
+cancel, and an Admin tab for categories, products, stock and all orders.
+
+A **request log** down the right-hand side records every call the page makes —
+method, path, status, duration, and the JSON both ways. Click any entry to see
+exactly what went over the wire. There is also an **Endpoint map** tab listing
+what is routed and what deliberately is not, with a button that fires the blocked
+ones so you can watch the gateway return 404 without contacting the service.
+
 ## The API Gateway (Phase 10)
 
 ```bash
